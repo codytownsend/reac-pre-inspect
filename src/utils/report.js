@@ -1,4 +1,5 @@
-// src/utils/report.js
+// src/utils/report.js - generateReport function
+
 const generateReport = (inspection, property) => {
   // Get category names mapping
   const categoryNames = {
@@ -23,7 +24,7 @@ const generateReport = (inspection, property) => {
       date: inspection.date,
       inspector: inspection.inspector,
       score: 0, // Will be calculated
-      findings: []
+      areas: []
     },
     summary: {
       totalFindings: 0,
@@ -36,50 +37,118 @@ const generateReport = (inspection, property) => {
     }
   };
 
-  // No findings
-  if (!inspection.findings || inspection.findings.length === 0) {
+  // If still using the old format (findings directly on inspection)
+  if (inspection.findings && !inspection.areas) {
+    // Convert to new format for report
+    const allFindings = {
+      id: 'all-findings',
+      name: 'All Findings',
+      areaType: 'all',
+      findings: inspection.findings.map(finding => ({
+        id: finding.id,
+        category: finding.category,
+        categoryName: categoryNames[finding.category] || 'Other',
+        subcategory: finding.subcategory,
+        location: finding.location,
+        deficiency: finding.deficiency,
+        severity: finding.severity,
+        notes: finding.notes,
+        photoCount: finding.photos ? finding.photos.length : 0,
+        photos: finding.photos ? finding.photos.map(photo => photo.data || photo.url) : []
+      }))
+    };
+    
+    report.inspection.areas = [allFindings];
+    
+    // Populate summary statistics
+    allFindings.findings.forEach(finding => {
+      // Increment total findings
+      report.summary.totalFindings++;
+      
+      // Group by category
+      if (!report.summary.byCategory[finding.category]) {
+        report.summary.byCategory[finding.category] = 0;
+      }
+      report.summary.byCategory[finding.category]++;
+      
+      // Count by severity
+      if (finding.severity >= 1 && finding.severity <= 3) {
+        report.summary.bySeverity[finding.severity]++;
+      }
+    });
+    
+    // Calculate score based on findings
+    const deductions = allFindings.findings.reduce((total, finding) => {
+      switch (finding.severity) {
+        case 1: return total + 1;
+        case 2: return total + 3;
+        case 3: return total + 5;
+        default: return total;
+      }
+    }, 0);
+    
+    // Maximum possible score is 100
+    report.inspection.score = Math.max(0, 100 - deductions);
+    
+    return report;
+  }
+
+  // No areas or findings
+  if (!inspection.areas || inspection.areas.length === 0) {
     report.inspection.score = 100;
     return report;
   }
 
-  // Process all findings
-  report.inspection.findings = inspection.findings.map(finding => ({
-    id: finding.id,
-    category: finding.category,
-    categoryName: categoryNames[finding.category] || 'Other',
-    subcategory: finding.subcategory,
-    location: finding.location,
-    deficiency: finding.deficiency,
-    severity: finding.severity,
-    notes: finding.notes,
-    photoCount: finding.photos ? finding.photos.length : 0,
-    photos: finding.photos ? finding.photos.map(photo => photo.url || photo.data) : []
-  }));
+  // Process all areas and their findings
+  report.inspection.areas = inspection.areas.map(area => {
+    // Process findings for this area
+    const areaFindings = area.findings.map(finding => ({
+      id: finding.id,
+      category: finding.category,
+      categoryName: categoryNames[finding.category] || 'Other',
+      subcategory: finding.subcategory,
+      deficiency: finding.deficiency,
+      severity: finding.severity,
+      notes: finding.notes,
+      photoCount: finding.photos ? finding.photos.length : 0,
+      photos: finding.photos ? finding.photos.map(photo => photo.data || photo.url) : []
+    }));
 
-  // Calculate summary statistics
-  report.summary.totalFindings = inspection.findings.length;
+    // Update summary statistics
+    areaFindings.forEach(finding => {
+      // Increment total findings
+      report.summary.totalFindings++;
 
-  // Group by category
-  inspection.findings.forEach(finding => {
-    if (!report.summary.byCategory[finding.category]) {
-      report.summary.byCategory[finding.category] = 0;
-    }
-    report.summary.byCategory[finding.category]++;
-    
-    // Count by severity
-    if (finding.severity >= 1 && finding.severity <= 3) {
-      report.summary.bySeverity[finding.severity]++;
-    }
+      // Group by category
+      if (!report.summary.byCategory[finding.category]) {
+        report.summary.byCategory[finding.category] = 0;
+      }
+      report.summary.byCategory[finding.category]++;
+      
+      // Count by severity
+      if (finding.severity >= 1 && finding.severity <= 3) {
+        report.summary.bySeverity[finding.severity]++;
+      }
+    });
+
+    return {
+      id: area.id,
+      name: area.name,
+      areaType: area.areaType,
+      findings: areaFindings
+    };
   });
 
-  // Calculate inspection score (simplified version of NSPIRE scoring)
-  const deductions = inspection.findings.reduce((total, finding) => {
-    switch (finding.severity) {
-      case 1: return total + 1;
-      case 2: return total + 3;
-      case 3: return total + 5;
-      default: return total;
-    }
+  // Calculate inspection score
+  const deductions = inspection.areas.reduce((total, area) => {
+    return total + area.findings.reduce((areaTotal, finding) => {
+      switch (finding.severity) {
+        case 1: return areaTotal + 1;
+        case 2: return areaTotal + 3;
+        case 3: return areaTotal + 5;
+        default: return areaTotal;
+      }
+    }, 0);
   }, 0);
   
   // Maximum possible score is 100

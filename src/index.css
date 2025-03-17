@@ -1920,3 +1920,266 @@ h3 {
 .modal-actions button {
   flex: 1;
 }
+
+
+/* Add these styles to your src/index.css file */
+
+/* Full screen modal for adding areas */
+.modal-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px;
+  /* Leave room for bottom navigation */
+  background-color: #ffffff;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  background-color: #fff;
+}
+
+.modal-header h2,
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  border-top: 1px solid #eee;
+  background-color: #fff;
+  position: sticky;
+  bottom: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 1.5rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.area-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.area-form {
+  padding: 16px;
+}
+
+.findings-section {
+  flex: 1;
+  padding: 0 16px 80px 16px;
+  /* Add bottom padding for scrolling */
+  overflow-y: auto;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.empty-findings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.findings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finding-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #ccc;
+  position: relative;
+}
+
+.finding-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 12px;
+}
+
+.finding-details {
+  flex: 1;
+}
+
+.finding-type {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.finding-deficiency {
+  margin-bottom: 4px;
+}
+
+.finding-severity {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.finding-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-right: 8px;
+}
+
+.finding-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-finding {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-finding:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Camera styles */
+.photo-capture-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.camera-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.camera-preview {
+  flex: 1;
+  object-fit: cover;
+  background-color: #000;
+}
+
+.camera-controls {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: #000;
+}
+
+.photo-review {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.captured-image-container {
+  width: 100%;
+  height: 250px;
+  background-color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.captured-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.finding-form {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 8px 16px;
+  margin: 8px 16px;
+  border-radius: 4px;
+}
+
+/* Severity badges */
+.severity-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.severity-1 {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.severity-2 {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.severity-3 {
+  background-color: #f8d7da;
+  color: #721c24;
+}

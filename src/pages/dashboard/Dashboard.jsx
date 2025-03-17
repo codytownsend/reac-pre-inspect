@@ -4,14 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useProperty } from '../../context/PropertyContext';
 import { useInspection } from '../../context/InspectionContext';
-import { useTeam } from '../../context/TeamContext';
 import { Home, Calendar, Users, ArrowRight, Clipboard, AlertTriangle } from 'lucide-react';
 
 const Dashboard = () => {
   const { currentUser } = useAuth();
   const { properties } = useProperty();
   const { inspections } = useInspection();
-  const { activeTeam } = useTeam();
   const navigate = useNavigate();
   
   // Get active inspections (not completed)
@@ -67,20 +65,6 @@ const Dashboard = () => {
         </p>
       </div>
       
-      {/* Team banner section - if no active team */}
-      {!activeTeam && (
-        <div className="card" style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/teams')}>
-          <div className="action-icon" style={{ marginRight: '16px', marginBottom: 0 }}>
-            <Users size={24} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <h3 style={{ margin: '0 0 4px 0', fontWeight: 600 }}>Create a team to collaborate</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>Share properties and inspections with your colleagues</p>
-          </div>
-          <ArrowRight size={20} />
-        </div>
-      )}
-      
       {/* Quick Actions section - improved layout */}
       <section style={{ marginBottom: '32px' }}>
         <h2 style={{ fontSize: '1.3rem', marginBottom: '16px' }}>Quick Actions</h2>
@@ -97,42 +81,6 @@ const Dashboard = () => {
               <Calendar size={24} />
             </div>
             <span style={{ fontWeight: 500 }}>New Inspection</span>
-          </div>
-        </div>
-      </section>
-      
-      {/* Stats Overview - improved layout */}
-      <section style={{ marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '1.3rem', marginBottom: '16px' }}>Overview</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-          <div className="card" style={{ margin: 0, textAlign: 'left', display: 'flex', alignItems: 'center' }}>
-            <div className="action-icon" style={{ marginRight: '12px', marginBottom: 0 }}>
-              <Home size={20} />
-            </div>
-            <div>
-              <div className="stat-value">{properties.length}</div>
-              <div className="stat-label" style={{ fontSize: '0.9rem', color: '#666' }}>Properties</div>
-            </div>
-          </div>
-          
-          <div className="card" style={{ margin: 0, textAlign: 'left', display: 'flex', alignItems: 'center' }}>
-            <div className="action-icon" style={{ marginRight: '12px', marginBottom: 0 }}>
-              <Calendar size={20} />
-            </div>
-            <div>
-              <div className="stat-value">{activeInspections.length}</div>
-              <div className="stat-label" style={{ fontSize: '0.9rem', color: '#666' }}>Active Inspections</div>
-            </div>
-          </div>
-          
-          <div className="card" style={{ margin: 0, textAlign: 'left', display: 'flex', alignItems: 'center' }}>
-            <div className="action-icon" style={{ marginRight: '12px', marginBottom: 0 }}>
-              <Clipboard size={20} />
-            </div>
-            <div>
-              <div className="stat-value">{recentInspections.length}</div>
-              <div className="stat-label" style={{ fontSize: '0.9rem', color: '#666' }}>Recent Reports</div>
-            </div>
           </div>
         </div>
       </section>

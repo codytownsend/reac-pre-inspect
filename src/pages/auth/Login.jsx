@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
+import logoImage from '../../assets/remi_logo.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -49,9 +50,17 @@ const Login = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
+          {/* Replace the text logo with the image logo */}
           <div className="logo-container">
-            <div className="logo">NSPIRE</div>
-            <div className="logo-subtitle">Pre-Inspection App</div>
+            <img 
+              src={logoImage} 
+              alt="Remi Logo" 
+              style={{ 
+                maxWidth: '180px', 
+                height: 'auto', 
+                marginBottom: '20px' 
+              }} 
+            />
           </div>
           <h1>Sign In</h1>
           <p>Welcome back! Please sign in to continue.</p>

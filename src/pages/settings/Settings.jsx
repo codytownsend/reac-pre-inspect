@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useTeam } from '../../context/TeamContext';
 import Header from '../../components/Header';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -11,7 +10,6 @@ import { User, LogOut, HelpCircle, Shield, Bell, Info, Trash2, Users, Building }
 
 const Settings = () => {
   const { currentUser, logout } = useAuth();
-  const { activeTeam } = useTeam();
   const navigate = useNavigate();
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -61,32 +59,6 @@ const Settings = () => {
           </div>
         </div>
       </Card>
-      
-      {/* Team section */}
-      <div className="settings-section">
-        <h3>Team</h3>
-        <ul className="settings-list">
-          <li className="settings-item" onClick={() => navigate('/teams')}>
-            <div className="settings-item-icon">
-              <Users size={20} />
-            </div>
-            <div className="settings-item-content">
-              <h4>Team Management</h4>
-              <p>{activeTeam ? `Current team: ${activeTeam.name}` : 'Create or join a team'}</p>
-            </div>
-          </li>
-          
-          <li className="settings-item" onClick={() => navigate('/properties')}>
-            <div className="settings-item-icon">
-              <Building size={20} />
-            </div>
-            <div className="settings-item-content">
-              <h4>Properties</h4>
-              <p>Manage your property portfolio</p>
-            </div>
-          </li>
-        </ul>
-      </div>
       
       {/* Settings sections */}
       <div className="settings-section">

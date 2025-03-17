@@ -364,24 +364,52 @@ export const InspectionProvider = ({ children }) => {
 
   const calculateScore = (inspectionId) => {
     const inspection = getInspection(inspectionId);
-    if (!inspection || !inspection.findings || inspection.findings.length === 0) {
+    
+    // If using old structure (findings directly on inspection)
+    if (inspection.findings && !inspection.areas) {
+      if (!inspection.findings || inspection.findings.length === 0) {
+        return 100;
+      }
+
+      // Level 1: -1 point, Level 2: -3 points, Level 3: -5 points
+      const deductions = inspection.findings.reduce((total, finding) => {
+        switch (finding.severity) {
+          case 1: return total + 1;
+          case 2: return total + 3;
+          case 3: return total + 5;
+          default: return total;
+        }
+      }, 0);
+      
+      // Maximum possible score is 100
+      return Math.max(0, 100 - deductions);
+    }
+    
+    // Using new structure (areas containing findings)
+    if (!inspection.areas || inspection.areas.length === 0) {
       return 100;
     }
-
-    // NSPIRE scoring is complex, this is a simplified version
-    // Level 1: -1 point, Level 2: -3 points, Level 3: -5 points
-    const deductions = inspection.findings.reduce((total, finding) => {
-      switch (finding.severity) {
-        case 1: return total + 1;
-        case 2: return total + 3;
-        case 3: return total + 5;
-        default: return total;
+    
+    // Calculate deductions from all areas
+    const deductions = inspection.areas.reduce((total, area) => {
+      if (!area.findings || area.findings.length === 0) {
+        return total;
       }
+      
+      const areaDeductions = area.findings.reduce((areaTotal, finding) => {
+        switch (finding.severity) {
+          case 1: return areaTotal + 1;
+          case 2: return areaTotal + 3;
+          case 3: return areaTotal + 5;
+          default: return areaTotal;
+        }
+      }, 0);
+      
+      return total + areaDeductions;
     }, 0);
     
     // Maximum possible score is 100
-    const score = Math.max(0, 100 - deductions);
-    return score;
+    return Math.max(0, 100 - deductions);
   };
 
   const value = {

@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase'; // Adjust this import path as needed
-import { ChevronDown, X, Printer, Download, Mail } from 'lucide-react';
+import { db } from '../../firebase';
+import { ChevronDown, X, Printer, Download, Mail, Building, Home } from 'lucide-react';
 
 const SharedReport = () => {
   const { id } = useParams();
@@ -12,13 +12,7 @@ const SharedReport = () => {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [expandedSections, setExpandedSections] = useState({
-    site: true,
-    buildingExterior: true,
-    buildingSystems: true,
-    commonAreas: true,
-    unit: true
-  });
+  const [expandedSections, setExpandedSections] = useState({});
   const [showImageModal, setShowImageModal] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
   
@@ -63,6 +57,22 @@ const SharedReport = () => {
         propertyData.id = propertyDoc.id;
         console.log("Loaded property data:", propertyData);
         setProperty(propertyData);
+        
+        // Initialize expanded state for areas or categories
+        const expandedState = {};
+        if (inspectionData.areas && inspectionData.areas.length > 0) {
+          // New structure - areas
+          inspectionData.areas.forEach(area => {
+            expandedState[area.id] = true; // Default to expanded
+          });
+        } else if (inspectionData.findings && inspectionData.findings.length > 0) {
+          // Old structure - categories
+          const categoryOrder = ['site', 'buildingExterior', 'buildingSystems', 'commonAreas', 'unit'];
+          categoryOrder.forEach(category => {
+            expandedState[category] = true; // Default to expanded
+          });
+        }
+        setExpandedSections(expandedState);
       } catch (error) {
         console.error('Error loading shared report:', error);
         setError('Error generating report: ' + error.message);
@@ -75,10 +85,10 @@ const SharedReport = () => {
   }, [id]);
   
   // Toggle section expand/collapse
-  const toggleSection = (category) => {
+  const toggleSection = (sectionId) => {
     setExpandedSections(prev => ({
       ...prev,
-      [category]: !prev[category]
+      [sectionId]: !prev[sectionId]
     }));
   };
   
@@ -127,13 +137,37 @@ const SharedReport = () => {
   };
   
   // Calculate NSPIRE score
-  const calculateScore = (findings) => {
-    if (!findings || findings.length === 0) {
+  const calculateScore = (inspection) => {
+    // If using new structure (areas)
+    if (inspection.areas && inspection.areas.length > 0) {
+      // Count all findings across all areas
+      const allFindings = inspection.areas.flatMap(area => area.findings || []);
+      
+      if (allFindings.length === 0) {
+        return 100;
+      }
+      
+      // Level 1: -1 point, Level 2: -3 points, Level 3: -5 points
+      const deductions = allFindings.reduce((total, finding) => {
+        switch (finding.severity) {
+          case 1: return total + 1;
+          case 2: return total + 3;
+          case 3: return total + 5;
+          default: return total;
+        }
+      }, 0);
+      
+      // Maximum possible score is 100
+      return Math.max(0, 100 - deductions);
+    } 
+    
+    // Using old structure (findings directly on inspection)
+    if (!inspection.findings || inspection.findings.length === 0) {
       return 100;
     }
     
     // Level 1: -1 point, Level 2: -3 points, Level 3: -5 points
-    const deductions = findings.reduce((total, finding) => {
+    const deductions = inspection.findings.reduce((total, finding) => {
       switch (finding.severity) {
         case 1: return total + 1;
         case 2: return total + 3;
@@ -147,9 +181,9 @@ const SharedReport = () => {
   };
   
   // Generate summary data
-  const generateSummary = (findings) => {
+  const generateSummary = (inspection) => {
     const summary = {
-      totalFindings: findings.length,
+      totalFindings: 0,
       byCategory: {},
       bySeverity: {
         1: 0,
@@ -158,7 +192,8 @@ const SharedReport = () => {
       }
     };
     
-    findings.forEach(finding => {
+    // Helper function to process a finding
+    const processFinding = (finding) => {
       // Count by category
       if (!summary.byCategory[finding.category]) {
         summary.byCategory[finding.category] = 0;
@@ -169,7 +204,23 @@ const SharedReport = () => {
       if (finding.severity >= 1 && finding.severity <= 3) {
         summary.bySeverity[finding.severity]++;
       }
-    });
+      
+      summary.totalFindings++;
+    };
+    
+    // If using new structure (areas)
+    if (inspection.areas && inspection.areas.length > 0) {
+      // Process all findings across all areas
+      inspection.areas.forEach(area => {
+        if (area.findings && area.findings.length > 0) {
+          area.findings.forEach(processFinding);
+        }
+      });
+    } 
+    // Using old structure (findings directly on inspection)
+    else if (inspection.findings && inspection.findings.length > 0) {
+      inspection.findings.forEach(processFinding);
+    }
     
     return summary;
   };
@@ -225,13 +276,12 @@ const SharedReport = () => {
   }
   
   // Calculate the score
-  const score = calculateScore(inspection.findings || []);
+  const score = calculateScore(inspection);
   
   // Generate summary
-  const summary = generateSummary(inspection.findings || []);
+  const summary = generateSummary(inspection);
   
-  // Define category order and names for display
-  const categoryOrder = ['site', 'buildingExterior', 'buildingSystems', 'commonAreas', 'unit'];
+  // Define category names for display
   const categoryNames = {
     site: 'Site',
     buildingExterior: 'Building Exterior',
@@ -240,25 +290,24 @@ const SharedReport = () => {
     unit: 'Unit'
   };
   
-  // Group findings by category
-  const findingsByCategory = {};
-  categoryOrder.forEach(category => {
-    findingsByCategory[category] = (inspection.findings || [])
-      .filter(finding => finding.category === category)
-      .sort((a, b) => b.severity - a.severity);
-  });
-  
-  // Log what we're rendering
-  console.log("Rendering report with inspection:", inspection);
-  console.log("Property:", property);
-  console.log("Findings by category:", findingsByCategory);
+  // For old structure: group findings by category
+  let findingsByCategory = {};
+  if (!inspection.areas && inspection.findings) {
+    // Old structure - organize by category
+    const categoryOrder = ['site', 'buildingExterior', 'buildingSystems', 'commonAreas', 'unit'];
+    categoryOrder.forEach(category => {
+      findingsByCategory[category] = (inspection.findings || [])
+        .filter(finding => finding.category === category)
+        .sort((a, b) => b.severity - a.severity);
+    });
+  }
   
   return (
     <div className="container report-container">
       {/* Report header for shared view */}
       <div className="report-header">
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>
-          NSPIRE Inspection Report
+          Property Inspection Report
         </h1>
         
         <div className="report-actions">
@@ -286,7 +335,7 @@ const SharedReport = () => {
       <div className="report-content">
         {/* Report Header */}
         <div className="report-title">
-          <h1>NSPIRE Pre-Inspection Report: {property.name}</h1>
+          <h1>Property Inspection Report: {property.name}</h1>
           <p>Generated on {new Date().toLocaleDateString()}</p>
         </div>
         
@@ -370,17 +419,122 @@ const SharedReport = () => {
               })}
             </div>
           </div>
+          
+          {/* Areas summary if using new structure */}
+          {inspection.areas && inspection.areas.length > 0 && (
+            <div className="summary-section">
+              <h3>Areas Inspected</h3>
+              <div className="summary-cards">
+                {inspection.areas.map(area => (
+                  <div key={area.id} className="summary-card">
+                    <div className="summary-card-value">{area.findings ? area.findings.length : 0}</div>
+                    <div className="summary-card-label">{area.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Detailed Findings */}
         <div className="report-findings">
           <h2>Detailed Findings</h2>
           
-          {/* Render findings by category */}
-          {inspection.findings && inspection.findings.length > 0 ? (
-            categoryOrder.map(category => {
+          {/* Render findings */}
+          {inspection.areas && inspection.areas.length > 0 ? (
+            // New structure - render by area
+            inspection.areas.map(area => (
+              <div key={area.id} className="findings-category">
+                {/* Collapsible section header */}
+                <div 
+                  className="category-header"
+                  onClick={() => toggleSection(area.id)}
+                  style={{ display: 'flex', alignItems: 'center' }}
+                >
+                  {area.areaType === 'unit' ? (
+                    <Home size={20} style={{ marginRight: '8px' }} />
+                  ) : area.areaType === 'exterior' || area.areaType === 'common' ? (
+                    <Building size={20} style={{ marginRight: '8px' }} />
+                  ) : null}
+                  <h3>{area.name} ({area.findings ? area.findings.length : 0})</h3>
+                  <ChevronDown 
+                    className={`toggle-icon ${expandedSections[area.id] ? 'expanded' : ''}`} 
+                    size={20}
+                  />
+                </div>
+                
+                {/* Collapsible content */}
+                {expandedSections[area.id] && area.findings && (
+                  <div className="category-findings">
+                    {area.findings.map((finding) => (
+                      <div 
+                        key={finding.id} 
+                        className="finding-card"
+                        style={{
+                          borderColor: getSeverityColor(finding.severity)
+                        }}
+                      >
+                        {/* Finding Header */}
+                        <div 
+                          className="finding-header"
+                          style={{
+                            backgroundColor: getSeverityColor(finding.severity),
+                            color: getSeverityTextColor(finding.severity)
+                          }}
+                        >
+                          <div className="finding-title">
+                            {categoryNames[finding.category] || finding.category}: {finding.subcategory}
+                          </div>
+                          <div className="finding-severity">
+                            {getSeverityLabel(finding.severity)}
+                          </div>
+                        </div>
+                        
+                        {/* Finding Details */}
+                        <div className="finding-content">
+                          <div className="finding-details">
+                            <p><strong>Deficiency:</strong> {finding.deficiency}</p>
+                            {finding.notes && (
+                              <p><strong>Notes:</strong> {finding.notes}</p>
+                            )}
+                          </div>
+                          
+                          {/* Photo Evidence */}
+                          {finding.photos && finding.photos.length > 0 && (
+                            <div className="finding-photos">
+                              <h4>Photo Evidence ({finding.photos.length})</h4>
+                              <div className="photo-thumbnails">
+                                {finding.photos.map((photo, index) => (
+                                  <div 
+                                    key={index} 
+                                    className="photo-thumbnail"
+                                    onClick={() => openImageModal(photo.data || photo.url, finding)}
+                                  >
+                                    <img 
+                                      src={photo.data || photo.url} 
+                                      alt={`Finding ${index + 1}`}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                    <div className="zoom-icon">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : inspection.findings && inspection.findings.length > 0 ? (
+            // Old structure - render by category
+            Object.keys(findingsByCategory).map(category => {
               const findings = findingsByCategory[category];
-              if (!findings || findings.length === 0) return null;
+              if (findings.length === 0) return null;
               
               return (
                 <div key={category} className="findings-category">
@@ -479,8 +633,8 @@ const SharedReport = () => {
         
         {/* Report footer */}
         <div className="report-footer">
-          <p>This report was generated using the NSPIRE Pre-Inspection Mobile App</p>
-          <p>© 2025 NSPIRE Inspection Software</p>
+          <p>This report was generated using the Property Inspection App</p>
+          <p>© 2025 Property Inspection Software</p>
         </div>
       </div>
 
@@ -508,8 +662,7 @@ const SharedReport = () => {
           </div>
           
           <div className="image-modal-details">
-            <h3>{categoryNames[activeImage.finding.category]}: {activeImage.finding.subcategory}</h3>
-            <p><strong>Location:</strong> {activeImage.finding.location}</p>
+            <h3>{categoryNames[activeImage.finding.category] || activeImage.finding.category}: {activeImage.finding.subcategory}</h3>
             <p><strong>Deficiency:</strong> {activeImage.finding.deficiency}</p>
           </div>
         </div>

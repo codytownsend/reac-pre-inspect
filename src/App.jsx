@@ -21,17 +21,14 @@ import NewInspection from './pages/inspections/NewInspection';
 import InspectionDetail from './pages/inspections/InspectionDetail';
 import CapturePhoto from './pages/inspections/CapturePhoto';
 import InspectionReport from './pages/inspections/InspectionReport';
-import SharedReport from './pages/shared/SharedReport'; // Import the new shared report component
-import Teams from './pages/teams/Teams';
-import CreateTeam from './pages/teams/CreateTeam';
+import SharedReport from './pages/shared/SharedReport';
 import Settings from './pages/settings/Settings';
 import NotFound from './pages/NotFound';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
 import { PropertyProvider } from './context/PropertyContext';
-import { InspectionProvider } from './context/InspectionContext'; // Fixed this import
-import { TeamProvider } from './context/TeamContext';
+import { InspectionProvider } from './context/InspectionContext';
 
 const AppContent = () => {
   const { currentUser, loading } = useAuth();
@@ -110,20 +107,6 @@ const AppContent = () => {
             <InspectionReport />
           </PrivateRoute>
         } />
-        
-        {/* Teams routes */}
-        <Route path="/teams" element={
-          <PrivateRoute>
-            <Teams />
-          </PrivateRoute>
-        } />
-        
-        {/* Create Team route */}
-        <Route path="/teams/new" element={
-          <PrivateRoute>
-            <CreateTeam />
-          </PrivateRoute>
-        } />
 
         <Route path="/settings" element={
           <PrivateRoute>
@@ -145,13 +128,11 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <TeamProvider>
-          <PropertyProvider>
-            <InspectionProvider>
-              <AppContent />
-            </InspectionProvider>
-          </PropertyProvider>
-        </TeamProvider>
+        <PropertyProvider>
+          <InspectionProvider>
+            <AppContent />
+          </InspectionProvider>
+        </PropertyProvider>
       </AuthProvider>
     </Router>
   );

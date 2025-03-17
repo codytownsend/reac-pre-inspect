@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import logoImage from '../../assets/remi_logo.png';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +15,6 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -34,31 +34,9 @@ const Register = () => {
       setError('');
       setLoading(true);
       await register(formData.name, formData.email, formData.password);
-      setCurrentStep(2); // Move to team creation step
+      navigate('/'); // Directly navigate to dashboard
     } catch (error) {
       setError('Failed to create account: ' + error.message);
-      setLoading(false);
-    }
-  };
-
-  const handleCreateTeam = async (teamName) => {
-    try {
-      setLoading(true);
-      console.log("Creating team:", teamName); // Debug log
-      
-      // If you have the TeamProvider set up:
-      const { createTeam } = useTeam();
-      await createTeam(teamName);
-      
-      // Without TeamProvider, just log and proceed
-      console.log("Team would be created:", teamName);
-      
-      // Navigate to dashboard after successful team creation
-      navigate('/');
-    } catch (error) {
-      console.error("Team creation error:", error);
-      setError('Failed to create team: ' + error.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -68,8 +46,15 @@ const Register = () => {
       <div className="auth-container">
         <div className="auth-header">
           <div className="logo-container">
-            <div className="logo">NSPIRE</div>
-            <div className="logo-subtitle">Pre-Inspection App</div>
+            <img 
+              src={logoImage} 
+              alt="Remi Logo" 
+              style={{ 
+                maxWidth: '180px', 
+                height: 'auto', 
+                marginBottom: '20px' 
+              }} 
+            />
           </div>
           <h1>{currentStep === 1 ? 'Create Account' : 'Create Your Team'}</h1>
           <p>
