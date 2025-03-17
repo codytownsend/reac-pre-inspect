@@ -1,4 +1,4 @@
-// src/context/InspectionContext.jsx
+// src/context/InspectionContext.jsx - Updated with NSPIRE support
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { 
   collection, 
@@ -14,6 +14,8 @@ import {
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from './AuthContext';
+import { Finding, Inspection } from '../models/Finding'; // Import our new models
+import { calculateNspireScore } from '../utils/nspireScoring'; // Import scoring utility
 
 const InspectionContext = createContext();
 
@@ -26,7 +28,7 @@ export const InspectionProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
 
-  // NSPIRE categories and subcategories
+  // NSPIRE categories and subcategories from the standard
   const nspireCategories = {
     site: {
       name: 'Site',
@@ -112,6 +114,22 @@ export const InspectionProvider = ({ children }) => {
     }
   };
 
+  // NSPIRE deficiency severity mappings - simplified example
+  const nspireDeficiencies = {
+    // Fire and Life Safety
+    'smoke_detector_missing': { severity: 'lifeThreatening', hcvRating: 'fail' },
+    'co_detector_missing': { severity: 'lifeThreatening', hcvRating: 'fail' },
+    'blocked_egress': { severity: 'lifeThreatening', hcvRating: 'fail' },
+    
+    // Mechanical
+    'inoperable_hvac_cold': { severity: 'lifeThreatening', hcvRating: 'fail' },
+    'inoperable_hvac_moderate': { severity: 'moderate', hcvRating: 'fail' },
+    'gas_leak': { severity: 'lifeThreatening', hcvRating: 'fail' },
+    'water_leak': { severity: 'moderate', hcvRating: 'fail' },
+    
+    // Could add many more based on the NSPIRE document
+  };
+
   useEffect(() => {
     if (!currentUser) {
       setInspections([]);
@@ -144,19 +162,22 @@ export const InspectionProvider = ({ children }) => {
     fetchInspections();
   }, [currentUser]);
 
-  const createInspection = async (inspection) => {
+  const createInspection = async (inspectionData) => {
     try {
-      const newInspection = {
-        ...inspection,
+      // Create a new Inspection object with our model
+      const inspection = new Inspection({
+        ...inspectionData,
         userId: currentUser.uid,
         findings: [],
-        created: new Date().toISOString()
-      };
+        areas: [],
+        created: new Date().toISOString(),
+        unitSample: determineUnitSample(inspectionData.totalUnits || 0)
+      });
       
-      const docRef = await addDoc(collection(db, 'inspections'), newInspection);
+      const docRef = await addDoc(collection(db, 'inspections'), inspection);
       
       const inspectionWithId = {
-        ...newInspection,
+        ...inspection,
         id: docRef.id
       };
       
@@ -175,12 +196,15 @@ export const InspectionProvider = ({ children }) => {
 
   const updateInspection = async (id, updatedData) => {
     try {
-      await updateDoc(doc(db, 'inspections', id), updatedData);
+      await updateDoc(doc(db, 'inspections', id), {
+        ...updatedData,
+        updatedAt: new Date().toISOString()
+      });
       
       setInspections(prev => 
         prev.map(inspection => 
           inspection.id === id 
-            ? { ...inspection, ...updatedData } 
+            ? { ...inspection, ...updatedData, updatedAt: new Date().toISOString() } 
             : inspection
         )
       );
@@ -203,19 +227,36 @@ export const InspectionProvider = ({ children }) => {
     }
   };
 
-  const addFinding = async (inspectionId, finding) => {
+  const addFinding = async (inspectionId, findingData) => {
     try {
-      const inspectionRef = doc(db, 'inspections', inspectionId);
-      const newFinding = {
-        ...finding,
+      const inspection = getInspection(inspectionId);
+      if (!inspection) {
+        throw new Error('Inspection not found');
+      }
+      
+      // Create a Finding object with our model
+      const finding = new Finding({
+        ...findingData,
         id: Date.now().toString(),
+        inspectionId,
         created: new Date().toISOString(),
         photos: []
-      };
+      });
+      
+      // Calculate the repair due date based on the inspection type
+      const inspectionDate = new Date(inspection.date);
+      const program = inspection.type === 'hcv' || inspection.type === 'pbv' ? 'hcv' : 'standard';
+      finding.repairDueDate = finding.calculateRepairDueDate(program, inspectionDate);
+      
+      // Determine HCV pass/fail rating
+      finding.hcvRating = finding.isFailForVoucher() ? 'fail' : 'pass';
+      
+      const inspectionRef = doc(db, 'inspections', inspectionId);
       
       // Update the inspection document to include the new finding
       await updateDoc(inspectionRef, {
-        findings: arrayUnion(newFinding)
+        findings: arrayUnion(finding),
+        updatedAt: new Date().toISOString()
       });
       
       // Update local state
@@ -224,13 +265,17 @@ export const InspectionProvider = ({ children }) => {
           inspection.id === inspectionId
             ? { 
                 ...inspection, 
-                findings: [...(inspection.findings || []), newFinding] 
+                findings: [...(inspection.findings || []), finding],
+                updatedAt: new Date().toISOString()
               }
             : inspection
         )
       );
       
-      return newFinding;
+      // Recalculate score
+      await updateScoreForInspection(inspectionId);
+      
+      return finding;
     } catch (error) {
       console.error('Error adding finding:', error);
       throw error;
@@ -247,11 +292,12 @@ export const InspectionProvider = ({ children }) => {
       }
       
       const updatedFindings = inspection.findings.map(finding => 
-        finding.id === findingId ? { ...finding, ...updatedFinding } : finding
+        finding.id === findingId ? { ...finding, ...updatedFinding, updatedAt: new Date().toISOString() } : finding
       );
       
       await updateDoc(inspectionRef, {
-        findings: updatedFindings
+        findings: updatedFindings,
+        updatedAt: new Date().toISOString()
       });
       
       setInspections(prev => 
@@ -259,11 +305,15 @@ export const InspectionProvider = ({ children }) => {
           inspection.id === inspectionId
             ? { 
                 ...inspection, 
-                findings: updatedFindings
+                findings: updatedFindings,
+                updatedAt: new Date().toISOString()
               }
             : inspection
         )
       );
+      
+      // Recalculate score
+      await updateScoreForInspection(inspectionId);
     } catch (error) {
       console.error('Error updating finding:', error);
       throw error;
@@ -282,7 +332,8 @@ export const InspectionProvider = ({ children }) => {
       const updatedFindings = inspection.findings.filter(finding => finding.id !== findingId);
       
       await updateDoc(inspectionRef, {
-        findings: updatedFindings
+        findings: updatedFindings,
+        updatedAt: new Date().toISOString()
       });
       
       setInspections(prev => 
@@ -290,11 +341,15 @@ export const InspectionProvider = ({ children }) => {
           inspection.id === inspectionId
             ? { 
                 ...inspection, 
-                findings: updatedFindings
+                findings: updatedFindings,
+                updatedAt: new Date().toISOString()
               }
             : inspection
         )
       );
+      
+      // Recalculate score
+      await updateScoreForInspection(inspectionId);
     } catch (error) {
       console.error('Error deleting finding:', error);
       throw error;
@@ -335,14 +390,16 @@ export const InspectionProvider = ({ children }) => {
         finding.id === findingId
           ? { 
               ...finding, 
-              photos: [...(finding.photos || []), photo] 
+              photos: [...(finding.photos || []), photo],
+              updatedAt: new Date().toISOString()
             }
           : finding
       );
       
       // Update the inspection in Firestore
       await updateDoc(doc(db, 'inspections', inspectionId), {
-        findings: updatedFindings
+        findings: updatedFindings,
+        updatedAt: new Date().toISOString()
       });
       
       // Update local state
@@ -351,7 +408,8 @@ export const InspectionProvider = ({ children }) => {
           inspection.id === inspectionId
             ? { 
                 ...inspection, 
-                findings: updatedFindings
+                findings: updatedFindings,
+                updatedAt: new Date().toISOString()
               }
             : inspection
         )
@@ -362,60 +420,104 @@ export const InspectionProvider = ({ children }) => {
     }
   };
 
+  const updateScoreForInspection = async (inspectionId) => {
+    try {
+      const inspection = getInspection(inspectionId);
+      if (!inspection) {
+        throw new Error('Inspection not found');
+      }
+      
+      // Create an Inspection object to use our model methods
+      const inspectionObj = new Inspection(inspection);
+      const scoreDetails = inspectionObj.calculateScore();
+      
+      // Update the inspection score in Firestore
+      await updateDoc(doc(db, 'inspections', inspectionId), {
+        score: scoreDetails.score,
+        scoreDetails: scoreDetails,
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Update local state
+      setInspections(prev => 
+        prev.map(inspection => 
+          inspection.id === inspectionId
+            ? { 
+                ...inspection, 
+                score: scoreDetails.score,
+                scoreDetails: scoreDetails,
+                updatedAt: new Date().toISOString()
+              }
+            : inspection
+        )
+      );
+      
+      return scoreDetails;
+    } catch (error) {
+      console.error('Error updating inspection score:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Determine the unit sample size based on NSPIRE standards
+   */
+  const determineUnitSample = (totalUnits) => {
+    // NSPIRE Unit Sampling Logic
+    if (totalUnits <= 0) return 0;
+    if (totalUnits <= 1) return 1;
+    if (totalUnits <= 2) return 2;
+    if (totalUnits <= 3) return 3;
+    if (totalUnits <= 4) return 4;
+    if (totalUnits <= 5) return 5;
+    if (totalUnits <= 6) return 6;
+    if (totalUnits <= 7) return 6;
+    if (totalUnits <= 8) return 7;
+    if (totalUnits <= 9) return 8;
+    if (totalUnits <= 10) return 8;
+    if (totalUnits <= 12) return 9;
+    if (totalUnits <= 14) return 10;
+    if (totalUnits <= 16) return 11;
+    if (totalUnits <= 18) return 12;
+    if (totalUnits <= 21) return 13;
+    if (totalUnits <= 24) return 14;
+    if (totalUnits <= 27) return 15;
+    if (totalUnits <= 30) return 16;
+    if (totalUnits <= 35) return 17;
+    if (totalUnits <= 39) return 18;
+    if (totalUnits <= 45) return 19;
+    if (totalUnits <= 51) return 20;
+    if (totalUnits <= 59) return 21;
+    if (totalUnits <= 67) return 22;
+    if (totalUnits <= 78) return 23;
+    if (totalUnits <= 92) return 24;
+    if (totalUnits <= 110) return 25;
+    if (totalUnits <= 133) return 26;
+    if (totalUnits <= 166) return 27;
+    if (totalUnits <= 214) return 28;
+    if (totalUnits <= 295) return 29;
+    if (totalUnits <= 455) return 30;
+    if (totalUnits <= 920) return 31;
+    return 32; // 921+ units
+  };
+
+  /**
+   * Calculate the score for an inspection based on NSPIRE standards
+   */
   const calculateScore = (inspectionId) => {
     const inspection = getInspection(inspectionId);
+    if (!inspection) return 100;
     
-    // If using old structure (findings directly on inspection)
-    if (inspection.findings && !inspection.areas) {
-      if (!inspection.findings || inspection.findings.length === 0) {
-        return 100;
-      }
-
-      // Level 1: -1 point, Level 2: -3 points, Level 3: -5 points
-      const deductions = inspection.findings.reduce((total, finding) => {
-        switch (finding.severity) {
-          case 1: return total + 1;
-          case 2: return total + 3;
-          case 3: return total + 5;
-          default: return total;
-        }
-      }, 0);
-      
-      // Maximum possible score is 100
-      return Math.max(0, 100 - deductions);
-    }
-    
-    // Using new structure (areas containing findings)
-    if (!inspection.areas || inspection.areas.length === 0) {
-      return 100;
-    }
-    
-    // Calculate deductions from all areas
-    const deductions = inspection.areas.reduce((total, area) => {
-      if (!area.findings || area.findings.length === 0) {
-        return total;
-      }
-      
-      const areaDeductions = area.findings.reduce((areaTotal, finding) => {
-        switch (finding.severity) {
-          case 1: return areaTotal + 1;
-          case 2: return areaTotal + 3;
-          case 3: return areaTotal + 5;
-          default: return areaTotal;
-        }
-      }, 0);
-      
-      return total + areaDeductions;
-    }, 0);
-    
-    // Maximum possible score is 100
-    return Math.max(0, 100 - deductions);
+    // Create an Inspection object to use our model methods
+    const inspectionObj = new Inspection(inspection);
+    return inspectionObj.calculateScore().score;
   };
 
   const value = {
     inspections,
     loading,
     nspireCategories,
+    nspireDeficiencies,
     createInspection,
     getInspection,
     updateInspection,
@@ -424,7 +526,9 @@ export const InspectionProvider = ({ children }) => {
     updateFinding,
     deleteFinding,
     addPhotoToFinding,
-    calculateScore
+    calculateScore,
+    updateScoreForInspection,
+    determineUnitSample
   };
 
   return (
