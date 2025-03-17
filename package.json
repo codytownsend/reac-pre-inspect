@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "generate-config": "node --no-warnings scripts/generate-config.js",
+    "build": "npm run generate-config && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && firebase deploy"
   },
   "dependencies": {
     "firebase": "^10.3.0",
