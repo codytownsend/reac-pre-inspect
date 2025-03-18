@@ -74,10 +74,10 @@ const InspectionMain = () => {
   };
   
   const getSeverityStatusIcon = (status) => {
-    if (status === 'critical') return <AlertCircle size={18} className="text-red-500" />;
-    if (status === 'serious') return <AlertTriangle size={18} className="text-orange-500" />;
-    if (status === 'concerns') return <Clock size={18} className="text-yellow-500" />;
-    return <CheckCircle size={18} className="text-green-500" />;
+    if (status === 'critical') return <AlertCircle size={18} className="severity-icon--critical" />;
+    if (status === 'serious') return <AlertTriangle size={18} className="severity-icon--serious" />;
+    if (status === 'concerns') return <Clock size={18} className="severity-icon--moderate" />;
+    return <CheckCircle size={18} className="severity-icon--minor" />;
   };
   
   const getAreaStatusSeverity = (areaType) => {
@@ -112,33 +112,29 @@ const InspectionMain = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading inspection details...</p>
-        </div>
+      <div className="modern-loading-screen">
+        <div className="modern-loading-spinner"></div>
+        <p className="modern-loading-text">Loading inspection details...</p>
       </div>
     );
   }
   
   if (!inspection || !property) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <div className="bg-white p-6 rounded-xl shadow-sm max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle size={32} className="text-red-500" />
-          </div>
-          <h2 className="text-xl font-bold mb-2">Inspection Not Found</h2>
-          <p className="text-gray-600 mb-6">
-            {error || "The inspection you're looking for doesn't exist or has been removed."}
-          </p>
-          <button 
-            className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium"
-            onClick={() => navigate('/inspections')}
-          >
-            Back to Inspections
-          </button>
+      <div className="modern-empty-state">
+        <div className="modern-empty-state__icon">
+          <AlertCircle size={32} />
         </div>
+        <h2 className="modern-empty-state__title">Inspection Not Found</h2>
+        <p className="modern-empty-state__description">
+          {error || "The inspection you're looking for doesn't exist or has been removed."}
+        </p>
+        <button 
+          className="modern-btn modern-btn--primary"
+          onClick={() => navigate('/inspections')}
+        >
+          Back to Inspections
+        </button>
       </div>
     );
   }
@@ -174,21 +170,21 @@ const InspectionMain = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* App Bar */}
-      <div className="bg-white p-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
+      <div className="app-bar">
         <div className="flex items-center">
           <button
-            className="p-2 rounded-full hover:bg-gray-100 mr-2"
+            className="app-bar__back-button"
             onClick={() => navigate('/inspections')}
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-bold">Inspection Details</h1>
+          <h1 className="app-bar__title">Inspection Details</h1>
         </div>
         
         <div className="flex items-center">
           <div className="relative mr-2">
             <button
-              className="p-2 rounded-full hover:bg-gray-100"
+              className="app-bar__action-button"
               onClick={() => setShowShareOptions(!showShareOptions)}
             >
               <Share2 size={20} />
@@ -211,7 +207,7 @@ const InspectionMain = () => {
           </div>
           
           <button
-            className="p-2 rounded-full hover:bg-gray-100"
+            className="app-bar__action-button"
             onClick={handleGenerateReport}
           >
             <Download size={20} />
@@ -228,32 +224,34 @@ const InspectionMain = () => {
       
       {/* Property Header */}
       <div className="p-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="text-lg font-bold mb-1">{property.name}</h2>
-          <p className="text-gray-600 text-sm mb-3">{property.address}</p>
-          
-          <div className="flex flex-wrap gap-x-4 gap-y-2 border-t pt-3">
-            <div className="flex items-center">
-              <Calendar size={16} className="text-gray-500 mr-2" />
-              <span className="text-gray-700 text-sm">
-                {new Date(inspection.date).toLocaleDateString()}
-              </span>
-            </div>
+        <div className="modern-card">
+          <div className="modern-card__content">
+            <h2 className="text-lg font-bold mb-1">{property.name}</h2>
+            <p className="text-gray-600 text-sm mb-3">{property.address}</p>
             
-            <div className="flex items-center">
-              <User size={16} className="text-gray-500 mr-2" />
-              <span className="text-gray-700 text-sm">
-                {inspection.inspector}
-              </span>
-            </div>
-            
-            <div className="flex items-center">
-              <span className={`px-2 py-1 rounded-full text-white text-xs font-medium ${
-                inspection.status === 'Completed' ? 'bg-green-500' : 
-                inspection.status === 'In Progress' ? 'bg-yellow-500' : 'bg-blue-500'
-              }`}>
-                {inspection.status}
-              </span>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 border-t pt-3">
+              <div className="flex items-center">
+                <Calendar size={16} className="text-gray-500 mr-2" />
+                <span className="text-gray-700 text-sm">
+                  {new Date(inspection.date).toLocaleDateString()}
+                </span>
+              </div>
+              
+              <div className="flex items-center">
+                <User size={16} className="text-gray-500 mr-2" />
+                <span className="text-gray-700 text-sm">
+                  {inspection.inspector}
+                </span>
+              </div>
+              
+              <div className="flex items-center">
+                <span className={`modern-status-badge ${
+                  inspection.status === 'Completed' ? 'modern-status-badge--green' : 
+                  inspection.status === 'In Progress' ? 'modern-status-badge--yellow' : 'modern-status-badge--blue'
+                }`}>
+                  {inspection.status}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -261,7 +259,7 @@ const InspectionMain = () => {
       
       {/* Inspection Score */}
       <div className="px-4 mb-3">
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="modern-card">
           <div className="px-4 py-3 bg-gray-50 border-b">
             <h3 className="font-bold">NSPIRE Score</h3>
           </div>
@@ -286,14 +284,14 @@ const InspectionMain = () => {
         <h3 className="font-bold mb-3">Inspection Areas</h3>
         
         {/* Units */}
-        <div className="bg-white rounded-xl shadow-sm mb-3 overflow-hidden">
+        <div className="modern-card mb-3">
           <button 
             className="w-full p-4 flex items-center justify-between"
             onClick={() => navigate(`/inspections/${id}/areas/units`)}
           >
             <div className="flex items-center">
-              <div className="bg-blue-100 p-3 rounded-lg mr-3">
-                <Home size={20} className="text-blue-500" />
+              <div className="modern-list-item__icon modern-list-item__icon--blue">
+                <Home size={20} />
               </div>
               <div className="text-left">
                 <h3 className="font-medium">Units</h3>
@@ -311,14 +309,14 @@ const InspectionMain = () => {
         </div>
         
         {/* Inside Areas */}
-        <div className="bg-white rounded-xl shadow-sm mb-3 overflow-hidden">
+        <div className="modern-card mb-3">
           <button 
             className="w-full p-4 flex items-center justify-between"
             onClick={() => navigate(`/inspections/${id}/areas/inside`)}
           >
             <div className="flex items-center">
-              <div className="bg-purple-100 p-3 rounded-lg mr-3">
-                <Building size={20} className="text-purple-500" />
+              <div className="modern-list-item__icon modern-list-item__icon--purple">
+                <Building size={20} />
               </div>
               <div className="text-left">
                 <h3 className="font-medium">Inside Areas</h3>
@@ -336,14 +334,14 @@ const InspectionMain = () => {
         </div>
         
         {/* Outside Areas */}
-        <div className="bg-white rounded-xl shadow-sm mb-3 overflow-hidden">
+        <div className="modern-card mb-3">
           <button 
             className="w-full p-4 flex items-center justify-between"
             onClick={() => navigate(`/inspections/${id}/areas/outside`)}
           >
             <div className="flex items-center">
-              <div className="bg-green-100 p-3 rounded-lg mr-3">
-                <Grid size={20} className="text-green-500" />
+              <div className="modern-list-item__icon modern-list-item__icon--green">
+                <Grid size={20} />
               </div>
               <div className="text-left">
                 <h3 className="font-medium">Outside Areas</h3>
@@ -362,9 +360,9 @@ const InspectionMain = () => {
       </div>
       
       {/* Quick Actions */}
-      <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t">
+      <div className="modern-bottom-bar">
         <button 
-          className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium flex items-center justify-center"
+          className="modern-btn modern-btn--primary modern-btn--block"
           onClick={handleGenerateReport}
         >
           <Download size={20} className="mr-2" />

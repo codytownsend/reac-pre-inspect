@@ -1,3 +1,4 @@
+// src/pages/inspections/FindingDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
@@ -40,28 +41,137 @@ const FindingDetailPage = () => {
   const [photos, setPhotos] = useState([]);
   
   useEffect(() => {
-    // Existing effect code
-    // ...
+    const loadData = async () => {
+      try {
+        const inspectionData = getInspection(id);
+        if (!inspectionData) {
+          navigate('/inspections');
+          return;
+        }
+        
+        setInspection(inspectionData);
+        
+        // Find area in inspection
+        const areaData = inspectionData.areas?.find(a => a.id === areaId);
+        if (!areaData) {
+          setError('Area not found');
+          setLoading(false);
+          return;
+        }
+        
+        setArea(areaData);
+        
+        // Find finding in area
+        const findingData = areaData.findings?.find(f => f.id === findingId);
+        if (!findingData) {
+          setError('Finding not found');
+          setLoading(false);
+          return;
+        }
+        
+        setFinding(findingData);
+        
+        // Initialize editable fields
+        setDeficiency(findingData.deficiency || '');
+        setSeverity(findingData.severity || 'moderate');
+        setNotes(findingData.notes || '');
+        setRepairStatus(findingData.status || 'open');
+        setPhotos(findingData.photos || []);
+        
+      } catch (error) {
+        console.error("Error loading finding:", error);
+        setError('Error loading finding details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
   }, [id, areaId, findingId, getInspection, navigate]);
   
   const handlePhotoCapture = (photoData) => {
-    // Existing function
-    // ...
+    const newPhoto = {
+      id: Date.now().toString(),
+      data: photoData,
+      timestamp: new Date().toISOString()
+    };
+    
+    setPhotos(prev => [...prev, newPhoto]);
+    setShowPhotoCapture(false);
   };
   
   const handleRemovePhoto = (photoId) => {
-    // Existing function
-    // ...
+    setPhotos(prev => prev.filter(photo => photo.id !== photoId));
   };
   
   const handleSave = async () => {
-    // Existing function with styling updates
-    // ...
+    if (!deficiency.trim()) {
+      setError('Deficiency description is required');
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      
+      // Create updated finding object
+      const updatedFinding = {
+        ...finding,
+        deficiency,
+        severity,
+        notes,
+        status: repairStatus,
+        photos,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update the finding in the area
+      const updatedAreas = inspection.areas.map(a => {
+        if (a.id === areaId) {
+          const updatedFindings = a.findings.map(f => 
+            f.id === findingId ? updatedFinding : f
+          );
+          return { ...a, findings: updatedFindings };
+        }
+        return a;
+      });
+      
+      // Update inspection in context and database
+      await updateInspection(id, { areas: updatedAreas });
+      
+      // Update local state
+      setFinding(updatedFinding);
+      setEditMode(false);
+      setSaving(false);
+      
+    } catch (error) {
+      console.error("Error saving finding:", error);
+      setError('Error saving finding');
+      setSaving(false);
+    }
   };
   
   const handleDelete = async () => {
-    // Existing function
-    // ...
+    try {
+      // Find and remove the finding from the area
+      const updatedAreas = inspection.areas.map(a => {
+        if (a.id === areaId) {
+          const updatedFindings = a.findings.filter(f => f.id !== findingId);
+          return { ...a, findings: updatedFindings };
+        }
+        return a;
+      });
+      
+      // Update inspection in context and database
+      await updateInspection(id, { areas: updatedAreas });
+      
+      // Navigate back to area detail
+      navigate(`/inspections/${id}/${areaType}/${areaId}`);
+      
+    } catch (error) {
+      console.error("Error deleting finding:", error);
+      setError('Error deleting finding');
+      setShowDeleteConfirm(false);
+    }
   };
   
   const getSeverityIcon = (severityLevel) => {
@@ -95,18 +205,48 @@ const FindingDetailPage = () => {
   };
   
   const getRepairTimeframe = (severityLevel) => {
-    // Existing function
-    // ...
+    switch (severityLevel) {
+      case 'lifeThreatening':
+        return '24 Hours';
+      case 'severe':
+        return areaType === 'unit' ? '30 Days' : '24 Hours';
+      case 'moderate':
+        return '30 Days';
+      case 'low':
+        return '60 Days';
+      default:
+        return '30 Days';
+    }
   };
   
   const getPassFailStatus = (severityLevel) => {
-    // Existing function
-    // ...
+    if (areaType !== 'unit') return null;
+    
+    switch (severityLevel) {
+      case 'lifeThreatening':
+      case 'severe':
+      case 'moderate':
+        return 'Fail';
+      case 'low':
+        return 'Pass';
+      default:
+        return 'Fail';
+    }
   };
   
   const getStatusBadge = (status) => {
-    // Existing function updated to use modern-status-badge classes
-    // ...
+    switch (status) {
+      case 'open':
+        return <span className="modern-status-badge modern-status-badge--yellow">Open</span>;
+      case 'scheduled':
+        return <span className="modern-status-badge modern-status-badge--blue">Scheduled</span>;
+      case 'repaired':
+        return <span className="modern-status-badge modern-status-badge--orange">Repaired</span>;
+      case 'verified':
+        return <span className="modern-status-badge modern-status-badge--green">Verified</span>;
+      default:
+        return <span className="modern-status-badge modern-status-badge--yellow">Open</span>;
+    }
   };
   
   if (loading) {
@@ -376,7 +516,7 @@ const FindingDetailPage = () => {
             
             {/* Created/Updated timestamps */}
             <div className="finding-details__timestamps">
-              <p className="finding-details__timestamp">Created: {new Date(finding.createdAt).toLocaleString()}</p>
+              <p className="finding-details__timestamp">Created: {new Date(finding.created || finding.createdAt).toLocaleString()}</p>
               {finding.updatedAt && (
                 <p className="finding-details__timestamp">Last updated: {new Date(finding.updatedAt).toLocaleString()}</p>
               )}
@@ -436,3 +576,68 @@ const FindingDetailPage = () => {
               className="modern-btn modern-btn--primary"
               onClick={handleSave}
               disabled={saving || !deficiency.trim()}
+            >
+              {saving ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={16} className="mr-1" /> Save Changes
+                </>
+              )}
+            </button>
+          ) : (
+            <button 
+              className="modern-btn modern-btn--primary"
+              onClick={() => setEditMode(true)}
+            >
+              <Edit size={16} className="mr-1" /> Edit Finding
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {/* Photo Capture Modal */}
+      {showPhotoCapture && (
+        <FindingPhotoCapture
+          onPhotoCapture={handlePhotoCapture}
+          onClose={() => setShowPhotoCapture(false)}
+        />
+      )}
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="delete-confirm-modal">
+          <div className="delete-confirm-modal__content">
+            <div className="delete-confirm-modal__header">
+              <h3 className="delete-confirm-modal__title">Delete Finding?</h3>
+            </div>
+            <div className="delete-confirm-modal__body">
+              <p className="delete-confirm-modal__message">
+                Are you sure you want to delete this finding? This action cannot be undone.
+              </p>
+            </div>
+            <div className="delete-confirm-modal__footer">
+              <button 
+                className="delete-confirm-modal__delete"
+                onClick={handleDelete}
+              >
+                Delete Finding
+              </button>
+              <button 
+                className="delete-confirm-modal__cancel"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default FindingDetailPage;

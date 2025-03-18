@@ -30,36 +30,101 @@ const InsideAreaPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   
   useEffect(() => {
-    // Same effect code as before
-    // ...
+    const loadData = async () => {
+      try {
+        const inspectionData = getInspection(id);
+        if (!inspectionData) {
+          navigate('/inspections');
+          return;
+        }
+        
+        setInspection(inspectionData);
+        
+        // Filter inside areas
+        const areas = inspectionData.areas 
+          ? inspectionData.areas.filter(area => area.areaType === 'inside')
+          : [];
+        
+        setInsideAreas(areas);
+      } catch (error) {
+        console.error("Error loading inspection:", error);
+        setError('Error loading inspection details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
   }, [id, getInspection, navigate]);
   
   // Helper to get icon for inside area type
   const getAreaIcon = (areaType) => {
     switch (areaType) {
       case 'hallway':
-        return <DoorOpen size={20} />;
+        return <DoorOpen size={20} className="text-purple-500" />;
       case 'laundry':
-        return <Wrench size={20} />;
+        return <Wrench size={20} className="text-purple-500" />;
       case 'community':
-        return <Users size={20} />;
+        return <Users size={20} className="text-purple-500" />;
       case 'office':
-        return <Coffee size={20} />;
+        return <Coffee size={20} className="text-purple-500" />;
       case 'mechanical':
-        return <Wrench size={20} />;
+        return <Wrench size={20} className="text-purple-500" />;
       default:
-        return <Building size={20} />;
+        return <Building size={20} className="text-purple-500" />;
     }
   };
   
   const getSeverityIcon = (area) => {
-    // Same logic as previous function
-    // ...
+    if (!area.findings || area.findings.length === 0) {
+      return <CheckCircle size={20} className="severity-icon--minor" />;
+    }
+    
+    // Check for life-threatening findings
+    const hasLifeThreatening = area.findings.some(f => f.severity === 'lifeThreatening');
+    if (hasLifeThreatening) {
+      return <AlertCircle size={20} className="severity-icon--critical" />;
+    }
+    
+    // Check for severe findings
+    const hasSevere = area.findings.some(f => f.severity === 'severe');
+    if (hasSevere) {
+      return <AlertTriangle size={20} className="severity-icon--serious" />;
+    }
+    
+    // Check for moderate findings
+    const hasModerate = area.findings.some(f => f.severity === 'moderate');
+    if (hasModerate) {
+      return <Clock size={20} className="severity-icon--moderate" />;
+    }
+    
+    return <CheckCircle size={20} className="severity-icon--minor" />;
   };
   
   const getSeverityClass = (area) => {
-    // Same logic structure but returning 'critical', 'serious', 'moderate', or 'minor'
-    // ...
+    if (!area.findings || area.findings.length === 0) {
+      return 'minor';
+    }
+    
+    // Check for life-threatening findings
+    const hasLifeThreatening = area.findings.some(f => f.severity === 'lifeThreatening');
+    if (hasLifeThreatening) {
+      return 'critical';
+    }
+    
+    // Check for severe findings
+    const hasSevere = area.findings.some(f => f.severity === 'severe');
+    if (hasSevere) {
+      return 'serious';
+    }
+    
+    // Check for moderate findings
+    const hasModerate = area.findings.some(f => f.severity === 'moderate');
+    if (hasModerate) {
+      return 'moderate';
+    }
+    
+    return 'minor';
   };
   
   // Filter areas based on search term
@@ -103,7 +168,7 @@ const InsideAreaPage = () => {
           {error || "The inspection you're looking for doesn't exist or has been removed."}
         </p>
         <button 
-          className="modern-btn modern-btn--purple"
+          className="modern-btn modern-btn--primary"
           onClick={() => navigate('/inspections')}
         >
           Back to Inspections

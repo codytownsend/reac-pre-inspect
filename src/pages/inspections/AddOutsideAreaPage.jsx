@@ -2,18 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
-import Header from '../../components/Header';
-import Card from '../../components/Card';
-import Button from '../../components/Button';
-import Alert from '../../components/Alert';
-import Loading from '../../components/Loading';
 import { 
   Grid, 
   Save, 
   Home,
   ParkingSquare,
   TreePine,
-  Wind
+  Wind,
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 
 const AddOutsideAreaPage = () => {
@@ -96,21 +93,6 @@ const AddOutsideAreaPage = () => {
     }
   };
   
-  if (loading) {
-    return <Loading message="Loading inspection..." />;
-  }
-  
-  if (!inspection) {
-    return (
-      <div className="container">
-        <Alert type="danger" message={error || "Inspection not found"} />
-        <Button variant="primary" onClick={() => navigate('/inspections')}>
-          Back to Inspections
-        </Button>
-      </div>
-    );
-  }
-  
   // Area type options
   const areaTypes = [
     { id: 'building', name: 'Building Exterior', icon: <Home size={24} /> },
@@ -124,95 +106,150 @@ const AddOutsideAreaPage = () => {
     { id: 'other', name: 'Other Outside Area', icon: <Grid size={24} /> }
   ];
   
+  if (loading) {
+    return (
+      <div className="modern-loading-screen">
+        <div className="modern-loading-spinner"></div>
+        <p className="modern-loading-text">Loading inspection...</p>
+      </div>
+    );
+  }
+  
+  if (!inspection) {
+    return (
+      <div className="modern-empty-state">
+        <div className="modern-empty-state__icon">
+          <AlertCircle size={32} />
+        </div>
+        <h2 className="modern-empty-state__title">Inspection Not Found</h2>
+        <p className="modern-empty-state__description">
+          {error || "The inspection you're looking for doesn't exist or has been removed."}
+        </p>
+        <button 
+          className="modern-btn modern-btn--primary"
+          onClick={() => navigate('/inspections')}
+        >
+          Back to Inspections
+        </button>
+      </div>
+    );
+  }
+  
   return (
-    <div className="container pb-16">
-      <Header 
-        title="Add Outside Area" 
-        showBack={true}
-      />
+    <div className="min-h-screen bg-gray-50">
+      {/* App Bar */}
+      <div className="app-bar">
+        <div className="flex items-center">
+          <button
+            className="app-bar__back-button"
+            onClick={() => navigate(`/inspections/${id}/areas/outside`)}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="app-bar__title">Add Outside Area</h1>
+        </div>
+      </div>
       
-      {error && <Alert type="danger" message={error} />}
+      {error && (
+        <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
+          <AlertCircle size={20} className="mr-2" />
+          {error}
+        </div>
+      )}
       
       {/* Instructions Card */}
-      <Card className="mb-4 bg-green-50">
-        <div className="flex items-start">
-          <div className="bg-green-100 p-2 rounded-full mr-3">
-            <Grid size={24} className="text-green-600" />
-          </div>
-          <div>
-            <h2 className="font-bold text-green-800">Add a New Outside Area</h2>
-            <p className="text-sm text-green-600">
-              Enter a name and select the type of outside area. After saving, you'll be able to add findings for this area.
-            </p>
+      <div className="p-4">
+        <div className="modern-card bg-green-50">
+          <div className="modern-card__content flex items-start">
+            <div className="bg-green-100 p-2 rounded-full mr-3">
+              <Grid size={24} className="text-green-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-green-800">Add a New Outside Area</h2>
+              <p className="text-sm text-green-600">
+                Enter a name and select the type of outside area. After saving, you'll be able to add findings for this area.
+              </p>
+            </div>
           </div>
         </div>
-      </Card>
+      </div>
       
       {/* Area Form */}
-      <Card className="mb-4">
-        <div className="mb-4">
-          <label htmlFor="areaName" className="block text-sm font-medium text-gray-700 mb-1">
-            Area Name
-          </label>
-          <input
-            type="text"
-            id="areaName"
-            value={areaName}
-            onChange={(e) => setAreaName(e.target.value)}
-            placeholder="e.g., North Parking Lot, Main Building Exterior"
-            className="w-full p-2 border border-gray-300 rounded focus:ring-green-500 focus:border-green-500"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Area Type
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {areaTypes.map((type) => (
-              <button
-                key={type.id}
-                type="button"
-                className={`flex items-center p-3 rounded-lg border ${
-                  areaType === type.id 
-                    ? 'border-green-500 bg-green-50 text-green-700' 
-                    : 'border-gray-200 hover:bg-green-50'
-                }`}
-                onClick={() => setAreaType(type.id)}
-              >
-                <div className={`p-2 rounded-full mr-2 ${
-                  areaType === type.id ? 'bg-green-100' : 'bg-gray-100'
-                }`}>
-                  {type.icon}
-                </div>
-                <span>{type.name}</span>
-              </button>
-            ))}
+      <div className="p-4">
+        <div className="modern-card mb-4">
+          <div className="modern-card__content">
+            <div className="finding-form__group">
+              <label htmlFor="areaName" className="finding-form__label">
+                Area Name
+              </label>
+              <input
+                type="text"
+                id="areaName"
+                value={areaName}
+                onChange={(e) => setAreaName(e.target.value)}
+                placeholder="e.g., North Parking Lot, Main Building Exterior"
+                className="finding-form__input"
+              />
+            </div>
           </div>
         </div>
-      </Card>
+        
+        <div className="modern-card">
+          <div className="modern-card__content">
+            <label className="finding-form__label mb-4">
+              Area Type
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {areaTypes.map((type) => (
+                <button
+                  key={type.id}
+                  type="button"
+                  className={`flex items-center p-3 rounded-lg border ${
+                    areaType === type.id 
+                      ? 'border-green-500 bg-green-50 text-green-700' 
+                      : 'border-gray-200 hover:bg-green-50'
+                  }`}
+                  onClick={() => setAreaType(type.id)}
+                >
+                  <div className={`p-2 rounded-full mr-2 ${
+                    areaType === type.id ? 'bg-green-100' : 'bg-gray-100'
+                  }`}>
+                    {type.icon}
+                  </div>
+                  <span>{type.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Action Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 py-3 px-4 bg-white border-t">
-        <div className="container flex justify-between">
-          <Button 
-            variant="secondary" 
+      <div className="modern-bottom-bar">
+        <div className="modern-bottom-bar__content">
+          <button 
+            className="modern-btn modern-btn--secondary"
             onClick={() => navigate(`/inspections/${id}/areas/outside`)}
           >
             Cancel
-          </Button>
+          </button>
           
-          <Button 
-            variant="primary" 
+          <button 
+            className="modern-btn modern-btn--green"
             onClick={handleSave}
             disabled={saving || !areaName.trim() || !areaType}
           >
-            {saving ? 'Saving...' : (
+            {saving ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Saving...
+              </>
+            ) : (
               <>
                 <Save size={16} className="mr-1" /> Save Area
               </>
             )}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
