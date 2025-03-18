@@ -1,4 +1,4 @@
-// src/pages/inspections/InspectionPage.jsx
+// src/pages/inspections/InspectionMain.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
@@ -19,7 +19,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const InspectionPage = () => {
+const InspectionMain = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getInspection, calculateScore } = useInspection();
@@ -30,7 +30,6 @@ const InspectionPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [score, setScore] = useState(null);
-  const [showShareOptions, setShowShareOptions] = useState(false);
   
   useEffect(() => {
     const loadData = async () => {
@@ -187,30 +186,6 @@ const InspectionPage = () => {
         </div>
         
         <div className="flex items-center">
-          <div className="relative mr-2">
-            <button
-              className="p-2 rounded-full hover:bg-gray-100"
-              onClick={() => setShowShareOptions(!showShareOptions)}
-            >
-              <Share2 size={20} />
-            </button>
-            
-            {showShareOptions && (
-              <div className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg overflow-hidden w-48 z-20">
-                <button
-                  className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center"
-                  onClick={() => {
-                    setShowShareOptions(false);
-                    handleGenerateReport();
-                  }}
-                >
-                  <Download size={16} className="mr-2" />
-                  Generate Report
-                </button>
-              </div>
-            )}
-          </div>
-          
           <button
             className="p-2 rounded-full hover:bg-gray-100"
             onClick={handleGenerateReport}
@@ -290,7 +265,7 @@ const InspectionPage = () => {
         <div className="bg-white rounded-xl shadow-sm mb-3 overflow-hidden">
           <button 
             className="w-full p-4 flex items-center justify-between"
-            onClick={() => navigate(`/inspections/${id}/areas/units`)}
+            onClick={() => navigate(`/inspections/${id}/units`)}
           >
             <div className="flex items-center">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mr-3 text-blue-500">
@@ -315,7 +290,7 @@ const InspectionPage = () => {
         <div className="bg-white rounded-xl shadow-sm mb-3 overflow-hidden">
           <button 
             className="w-full p-4 flex items-center justify-between"
-            onClick={() => navigate(`/inspections/${id}/areas/inside`)}
+            onClick={() => navigate(`/inspections/${id}/inside`)}
           >
             <div className="flex items-center">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mr-3 text-purple-500">
@@ -340,7 +315,7 @@ const InspectionPage = () => {
         <div className="bg-white rounded-xl shadow-sm mb-3 overflow-hidden">
           <button 
             className="w-full p-4 flex items-center justify-between"
-            onClick={() => navigate(`/inspections/${id}/areas/outside`)}
+            onClick={() => navigate(`/inspections/${id}/outside`)}
           >
             <div className="flex items-center">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mr-3 text-green-500">
@@ -363,7 +338,7 @@ const InspectionPage = () => {
       </div>
       
       {/* Report Button */}
-      <div className="fixed bottom-0 left-0 right-0 py-4 px-4 bg-white border-t">
+      <div className="fixed bottom-16 left-0 right-0 py-4 px-4 bg-white border-t">
         <button 
           className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium flex items-center justify-center"
           onClick={handleGenerateReport}
@@ -376,4 +351,4 @@ const InspectionPage = () => {
   );
 };
 
-export default InspectionPage;
+export default InspectionMain;

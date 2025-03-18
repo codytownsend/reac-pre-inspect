@@ -1,4 +1,5 @@
-// src/utils/areaUtils.js
+// src/utils/areaUtils.js - Enhanced version
+import React from 'react';
 import { 
   Home, 
   Building, 
@@ -24,14 +25,14 @@ export const areaConfig = {
     title: 'Units',
     icon: Home,
     color: 'blue',
-    addPath: (inspectionId) => `/inspections/${inspectionId}/areas/unit/add`,
-    detailPath: (inspectionId, areaId) => `/inspections/${inspectionId}/areas/unit/${areaId}`,
-    listPath: (inspectionId) => `/inspections/${inspectionId}/areas/unit`,
+    addPath: (inspectionId) => `/inspections/${inspectionId}/units/add`,
+    detailPath: (inspectionId, areaId) => `/inspections/${inspectionId}/units/${areaId}`,
+    listPath: (inspectionId) => `/inspections/${inspectionId}/units`,
     quickAddOptions: [
-      { type: '101', label: '101' },
-      { type: '102', label: '102' },
-      { type: '201', label: '201' },
-      { type: '202', label: '202' }
+      { type: '101', label: '101', icon: Home },
+      { type: '102', label: '102', icon: Home },
+      { type: '201', label: '201', icon: Home },
+      { type: '202', label: '202', icon: Home }
     ],
     getItemIcon: () => Home
   },
@@ -39,9 +40,9 @@ export const areaConfig = {
     title: 'Inside Areas',
     icon: Building,
     color: 'purple',
-    addPath: (inspectionId) => `/inspections/${inspectionId}/areas/inside/add`,
-    detailPath: (inspectionId, areaId) => `/inspections/${inspectionId}/areas/inside/${areaId}`,
-    listPath: (inspectionId) => `/inspections/${inspectionId}/areas/inside`,
+    addPath: (inspectionId) => `/inspections/${inspectionId}/inside/add`,
+    detailPath: (inspectionId, areaId) => `/inspections/${inspectionId}/inside/${areaId}`,
+    listPath: (inspectionId) => `/inspections/${inspectionId}/inside`,
     quickAddOptions: [
       { type: 'hallway', label: 'Hallway', icon: DoorOpen },
       { type: 'laundry', label: 'Laundry', icon: Wrench },
@@ -62,9 +63,9 @@ export const areaConfig = {
     title: 'Outside Areas',
     icon: Grid,
     color: 'green',
-    addPath: (inspectionId) => `/inspections/${inspectionId}/areas/outside/add`,
-    detailPath: (inspectionId, areaId) => `/inspections/${inspectionId}/areas/outside/${areaId}`,
-    listPath: (inspectionId) => `/inspections/${inspectionId}/areas/outside`,
+    addPath: (inspectionId) => `/inspections/${inspectionId}/outside/add`,
+    detailPath: (inspectionId, areaId) => `/inspections/${inspectionId}/outside/${areaId}`,
+    listPath: (inspectionId) => `/inspections/${inspectionId}/outside`,
     quickAddOptions: [
       { type: 'building', label: 'Building', icon: Home },
       { type: 'parking', label: 'Parking', icon: ParkingSquare },
@@ -95,7 +96,7 @@ export const getAreaConfig = (areaType) => {
 /**
  * Gets the severity icon component for an area based on its findings
  * @param {Object} area - The area object with findings
- * @returns {React.Component} - The icon component to display
+ * @returns {Function} - The icon component to display
  */
 export const getSeverityIcon = (area) => {
   if (!area.findings || area.findings.length === 0) {
@@ -166,7 +167,7 @@ export const getSeverityDetails = (severityLevel, areaType = 'unit') => {
       return {
         icon: AlertCircle,
         name: 'Life Threatening',
-        color: 'bg-red-500',
+        color: 'red',
         text: 'text-red-500',
         border: 'border-red-500',
         bg: 'bg-red-50',
@@ -177,7 +178,7 @@ export const getSeverityDetails = (severityLevel, areaType = 'unit') => {
       return {
         icon: AlertTriangle,
         name: 'Severe',
-        color: 'bg-orange-500',
+        color: 'orange',
         text: 'text-orange-500',
         border: 'border-orange-500',
         bg: 'bg-orange-50',
@@ -188,7 +189,7 @@ export const getSeverityDetails = (severityLevel, areaType = 'unit') => {
       return {
         icon: Clock,
         name: 'Moderate',
-        color: 'bg-yellow-500',
+        color: 'yellow',
         text: 'text-yellow-500',
         border: 'border-yellow-500',
         bg: 'bg-yellow-50',
@@ -199,10 +200,10 @@ export const getSeverityDetails = (severityLevel, areaType = 'unit') => {
       return {
         icon: CheckCircle,
         name: 'Low',
-        color: 'bg-blue-500',
-        text: 'text-blue-500',
-        border: 'border-blue-500',
-        bg: 'bg-blue-50',
+        color: 'green',
+        text: 'text-green-500',
+        border: 'border-green-500',
+        bg: 'bg-green-50',
         timeframe: '60 Days',
         class: 'minor'
       };
@@ -210,7 +211,7 @@ export const getSeverityDetails = (severityLevel, areaType = 'unit') => {
       return {
         icon: Clock,
         name: 'Moderate',
-        color: 'bg-yellow-500',
+        color: 'yellow',
         text: 'text-yellow-500',
         border: 'border-yellow-500',
         bg: 'bg-yellow-50',
@@ -257,4 +258,30 @@ export const createArea = (areaType, name, type = '') => {
     findings: [],
     createdAt: new Date().toISOString()
   };
+};
+
+/**
+ * Gets total findings count for a specific area type in an inspection
+ * @param {Object} inspection - The inspection object
+ * @param {string} areaType - The area type to count
+ * @returns {number} - Count of findings
+ */
+export const getFindingsCount = (inspection, areaType) => {
+  if (!inspection || !inspection.areas) return 0;
+  
+  return inspection.areas
+    .filter(area => area.areaType === areaType)
+    .reduce((sum, area) => sum + (area.findings?.length || 0), 0);
+};
+
+/**
+ * Gets count of areas of a specific type in an inspection
+ * @param {Object} inspection - The inspection object
+ * @param {string} areaType - The area type to count
+ * @returns {number} - Count of areas
+ */
+export const getAreaCount = (inspection, areaType) => {
+  if (!inspection || !inspection.areas) return 0;
+  
+  return inspection.areas.filter(area => area.areaType === areaType).length;
 };

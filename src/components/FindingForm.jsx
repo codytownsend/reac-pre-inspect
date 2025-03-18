@@ -11,7 +11,8 @@ import {
   CheckCircle,
   Save,
   Plus,
-  Trash2
+  Trash2,
+  ArrowLeft
 } from 'lucide-react';
 
 /**
@@ -51,6 +52,18 @@ const FindingForm = ({
   const [notes, setNotes] = useState(initialFinding?.notes || '');
   const [repairStatus, setRepairStatus] = useState(initialFinding?.status || 'open');
   const [photos, setPhotos] = useState(initialFinding?.photos || []);
+  
+  // Get area theme color
+  const getAreaThemeColor = () => {
+    switch(areaType) {
+      case 'unit': return 'blue';
+      case 'inside': return 'purple';
+      case 'outside': return 'green';
+      default: return 'blue';
+    }
+  };
+  
+  const themeColor = getAreaThemeColor();
   
   // Filter categories based on area type
   const getFilteredCategories = () => {
@@ -149,50 +162,35 @@ const FindingForm = ({
         return {
           icon: <AlertCircle size={20} />,
           name: 'Life Threatening',
-          color: 'bg-red-500',
-          text: 'text-red-500',
-          border: 'border-red-500',
-          bg: 'bg-red-50',
+          color: 'red',
           timeframe: '24 Hours',
         };
       case 'severe':
         return {
           icon: <AlertTriangle size={20} />,
           name: 'Severe',
-          color: 'bg-orange-500',
-          text: 'text-orange-500',
-          border: 'border-orange-500',
-          bg: 'bg-orange-50',
+          color: 'orange',
           timeframe: areaType === 'unit' ? '30 Days' : '24 Hours',
         };
       case 'moderate':
         return {
           icon: <Clock size={20} />,
           name: 'Moderate',
-          color: 'bg-yellow-500',
-          text: 'text-yellow-500',
-          border: 'border-yellow-500',
-          bg: 'bg-yellow-50',
+          color: 'yellow',
           timeframe: '30 Days',
         };
       case 'low':
         return {
           icon: <CheckCircle size={20} />,
           name: 'Low',
-          color: 'bg-blue-500',
-          text: 'text-blue-500',
-          border: 'border-blue-500',
-          bg: 'bg-blue-50',
+          color: 'green',
           timeframe: '60 Days',
         };
       default:
         return {
           icon: <Clock size={20} />,
           name: 'Moderate',
-          color: 'bg-yellow-500',
-          text: 'text-yellow-500',
-          border: 'border-yellow-500',
-          bg: 'bg-yellow-50',
+          color: 'yellow',
           timeframe: '30 Days',
         };
     }
@@ -204,16 +202,20 @@ const FindingForm = ({
   // Category Selection View (Step 1)
   if (currentStep === 1) {
     return (
-      <div className="h-full flex flex-col bg-gray-50">
-        <div className="p-4 bg-white sticky top-0 z-10 border-b">
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white p-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
           <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">1</div>
-            <h2 className="text-xl font-bold">Select Category</h2>
+            <button
+              className="p-2 rounded-full hover:bg-gray-100 mr-2"
+              onClick={onCancel}
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-xl font-bold">Select Category</h1>
           </div>
-          <div className="flex mt-2">
-            <div className="h-1 bg-blue-500 rounded-full flex-1"></div>
-            <div className="h-1 bg-gray-300 rounded-full flex-1 ml-1"></div>
-            <div className="h-1 bg-gray-300 rounded-full flex-1 ml-1"></div>
+          
+          <div className={`text-${themeColor}-500 font-medium text-sm`}>
+            Step 1 of 3
           </div>
         </div>
         
@@ -224,8 +226,8 @@ const FindingForm = ({
           </div>
         )}
         
-        <div className="flex-1 overflow-auto p-4">
-          <div className="modern-list">
+        <div className="p-4">
+          <div className="space-y-3">
             {filteredCategories.map(categoryKey => {
               const category = nspireCategories[categoryKey];
               if (!category) return null;
@@ -233,32 +235,21 @@ const FindingForm = ({
               return (
                 <div
                   key={categoryKey}
-                  className="modern-list-item modern-list-item--interactive"
+                  className="bg-white rounded-lg shadow-sm overflow-hidden"
                   onClick={() => handleCategorySelect(categoryKey)}
                 >
-                  <div className="modern-list-item__content">
-                    <div className="modern-list-item__details">
-                      <h3 className="modern-list-item__title">{category.name}</h3>
-                      <p className="modern-list-item__subtitle">{category.subcategories.length} subcategories</p>
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-medium">{category.name}</h3>
+                      <p className="text-sm text-gray-600">{category.subcategories.length} subcategories</p>
                     </div>
-                    <div className="modern-list-item__action">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    <div className="text-gray-400">
+                      <ChevronRight size={20} />
                     </div>
                   </div>
                 </div>
               );
             })}
-          </div>
-        </div>
-        
-        <div className="modern-bottom-bar">
-          <div className="modern-bottom-bar__content">
-            <button 
-              className="modern-btn modern-btn--secondary"
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
           </div>
         </div>
       </div>
@@ -270,20 +261,28 @@ const FindingForm = ({
     const categoryData = nspireCategories[category];
     
     return (
-      <div className="h-full flex flex-col bg-gray-50">
-        <div className="p-4 bg-white sticky top-0 z-10 border-b">
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white p-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
           <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">2</div>
-            <h2 className="text-xl font-bold">Select Subcategory</h2>
+            <button
+              className="p-2 rounded-full hover:bg-gray-100 mr-2"
+              onClick={handleBackStep}
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-xl font-bold">Select Subcategory</h1>
           </div>
-          <div className="flex mt-2">
-            <div className="h-1 bg-blue-500 rounded-full flex-1"></div>
-            <div className="h-1 bg-blue-500 rounded-full flex-1 ml-1"></div>
-            <div className="h-1 bg-gray-300 rounded-full flex-1 ml-1"></div>
+          
+          <div className={`text-${themeColor}-500 font-medium text-sm`}>
+            Step 2 of 3
           </div>
-          <div className="mt-2 px-3 py-2 bg-gray-100 rounded-lg text-sm">
-            Selected: <span className="font-medium">{categoryData?.name}</span>
+        </div>
+        
+        <div className={`mx-4 mt-4 p-3 bg-${themeColor}-50 text-${themeColor}-700 rounded-lg flex items-center`}>
+          <div className={`p-1 rounded-full bg-${themeColor}-100 mr-2`}>
+            <CheckCircle size={16} />
           </div>
+          <span>Selected: <strong>{categoryData?.name}</strong></span>
         </div>
         
         {error && (
@@ -293,35 +292,22 @@ const FindingForm = ({
           </div>
         )}
         
-        <div className="flex-1 overflow-auto p-4">
-          <div className="modern-list">
+        <div className="p-4">
+          <div className="space-y-3">
             {categoryData?.subcategories.map(sub => (
               <div
                 key={sub}
-                className="modern-list-item modern-list-item--interactive"
+                className="bg-white rounded-lg shadow-sm overflow-hidden"
                 onClick={() => handleSubcategorySelect(sub)}
               >
-                <div className="modern-list-item__content">
-                  <div className="modern-list-item__details">
-                    <h3 className="modern-list-item__title">{sub}</h3>
-                  </div>
-                  <div className="modern-list-item__action">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <div className="p-4 flex items-center justify-between">
+                  <h3 className="font-medium">{sub}</h3>
+                  <div className="text-gray-400">
+                    <ChevronRight size={20} />
                   </div>
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-        
-        <div className="modern-bottom-bar">
-          <div className="modern-bottom-bar__content">
-            <button 
-              className="modern-btn modern-btn--secondary"
-              onClick={handleBackStep}
-            >
-              Back
-            </button>
           </div>
         </div>
       </div>
@@ -330,23 +316,33 @@ const FindingForm = ({
   
   // Finding Details View (Step 3)
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      <div className="p-4 bg-white sticky top-0 z-10 border-b">
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="bg-white p-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">3</div>
-          <h2 className="text-xl font-bold">Finding Details</h2>
+          <button
+            className="p-2 rounded-full hover:bg-gray-100 mr-2"
+            onClick={isEditMode ? onCancel : handleBackStep}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-xl font-bold">{isEditMode ? 'Edit Finding' : 'Add Finding'}</h1>
         </div>
-        <div className="flex mt-2">
-          <div className="h-1 bg-blue-500 rounded-full flex-1"></div>
-          <div className="h-1 bg-blue-500 rounded-full flex-1 ml-1"></div>
-          <div className="h-1 bg-blue-500 rounded-full flex-1 ml-1"></div>
-        </div>
+        
         {!isEditMode && (
-          <div className="mt-2 px-3 py-2 bg-gray-100 rounded-lg text-sm">
-            <span className="font-medium">{nspireCategories[category]?.name}: {subcategory}</span>
+          <div className={`text-${themeColor}-500 font-medium text-sm`}>
+            Step 3 of 3
           </div>
         )}
       </div>
+      
+      {!isEditMode && (
+        <div className={`mx-4 mt-4 p-3 bg-${themeColor}-50 text-${themeColor}-700 rounded-lg flex items-center`}>
+          <div className={`p-1 rounded-full bg-${themeColor}-100 mr-2`}>
+            <CheckCircle size={16} />
+          </div>
+          <span>Type: <strong>{nspireCategories[category]?.name}: {subcategory}</strong></span>
+        </div>
+      )}
       
       {error && (
         <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
@@ -355,11 +351,11 @@ const FindingForm = ({
         </div>
       )}
       
-      <div className="flex-1 overflow-auto p-4">
-        <div className="finding-form">
+      <div className="p-4">
+        <div className="space-y-4">
           {/* Deficiency Description */}
-          <div className="finding-form__group">
-            <label className="finding-form__label">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Deficiency Description *
             </label>
             <textarea
@@ -367,65 +363,65 @@ const FindingForm = ({
               onChange={(e) => setDeficiency(e.target.value)}
               placeholder="Describe what's wrong..."
               rows={3}
-              className="finding-form__textarea"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             ></textarea>
           </div>
           
           {/* Severity Selection */}
-          <div className="finding-form__group">
-            <label className="finding-form__label">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Severity
             </label>
             
-            <div className="finding-form__select-group">
+            <div className="grid grid-cols-2 gap-3 mb-4">
               {['lifeThreatening', 'severe', 'moderate', 'low'].map(severityLevel => {
                 const details = getSeverityDetails(severityLevel);
+                const isSelected = severity === severityLevel;
+                
                 return (
                   <button
                     key={severityLevel}
                     type="button"
-                    className={`finding-form__select-option ${
-                      severity === severityLevel 
-                        ? 'finding-form__select-option--selected' 
-                        : ''
+                    className={`p-3 rounded-lg border flex items-center ${
+                      isSelected 
+                        ? `border-${details.color}-500 bg-${details.color}-50 text-${details.color}-700` 
+                        : 'border-gray-300 text-gray-700'
                     }`}
                     onClick={() => setSeverity(severityLevel)}
                   >
-                    <div className={`finding-form__select-option-icon ${severity === severityLevel ? details.text : 'text-gray-400'}`}>
+                    <div className={`p-1 rounded-full ${isSelected ? `bg-${details.color}-100` : 'bg-gray-100'} mr-2`}>
                       {details.icon}
                     </div>
-                    <div className="finding-form__select-option-label">{details.name}</div>
+                    <span>{details.name}</span>
                   </button>
                 );
               })}
             </div>
             
-            <div className={`finding-form__severity-indicator finding-form__severity-indicator--${
-              severity === 'lifeThreatening' ? 'critical' : 
-              severity === 'severe' ? 'serious' : 
-              severity === 'moderate' ? 'moderate' : 'minor'
-            }`}>
-              <Clock size={16} className="finding-form__severity-icon" />
-              Required repair timeframe: <span className="font-bold ml-1">{severityDetails.timeframe}</span>
-              {areaType === 'unit' && 
-                <span className="ml-1">
-                  | {severity === 'low' ? 'Pass' : 'Fail'}
-                </span>
-              }
+            <div className={`p-3 rounded-lg bg-${severityDetails.color}-50 text-${severityDetails.color}-700 flex items-center`}>
+              <Clock size={16} className="mr-2" />
+              <span>
+                Required repair timeframe: <strong>{severityDetails.timeframe}</strong>
+                {areaType === 'unit' && 
+                  <span className="ml-1">
+                    | {severity === 'low' ? <strong>Pass</strong> : <strong>Fail</strong>}
+                  </span>
+                }
+              </span>
             </div>
           </div>
           
           {/* Repair Status (only for edit mode) */}
           {isEditMode && (
-            <div className="finding-form__group">
-              <label className="finding-form__label">
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Repair Status
               </label>
               <select
                 value={repairStatus}
                 onChange={(e) => setRepairStatus(e.target.value)}
-                className="finding-form__select"
+                className="w-full p-3 border border-gray-300 rounded-lg"
               >
                 <option value="open">Open</option>
                 <option value="scheduled">Scheduled</option>
@@ -436,8 +432,8 @@ const FindingForm = ({
           )}
           
           {/* Notes */}
-          <div className="finding-form__group">
-            <label className="finding-form__label">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Notes (Optional)
             </label>
             <textarea
@@ -445,17 +441,19 @@ const FindingForm = ({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any additional notes..."
               rows={2}
-              className="finding-form__textarea"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             ></textarea>
           </div>
           
           {/* Photos */}
-          <div className="photo-upload-section">
-            <div className="photo-upload-section__title">
-              <label className="photo-upload-section__title-text">Photos</label>
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex justify-between items-center mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Photos
+              </label>
               <button
                 type="button"
-                className="photo-upload-section__add-button"
+                className="text-blue-500 flex items-center text-sm font-medium"
                 onClick={() => setShowPhotoCapture(true)}
               >
                 <Camera size={16} className="mr-1" /> 
@@ -464,50 +462,51 @@ const FindingForm = ({
             </div>
             
             {photos.length > 0 ? (
-              <div className="photo-grid">
+              <div className="grid grid-cols-3 gap-3">
                 {photos.map((photo, index) => (
                   <div 
                     key={photo.id || index} 
-                    className="photo-thumbnail"
+                    className="relative aspect-square rounded-lg overflow-hidden border border-gray-200"
                   >
                     <img 
                       src={photo.data} 
                       alt={`Photo ${index+1}`} 
+                      className="w-full h-full object-cover"
                     />
                     <button
                       type="button"
-                      className="photo-thumbnail__remove"
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center"
                       onClick={() => handleRemovePhoto(photo.id || index)}
                     >
-                      <X size={12} />
+                      <X size={14} />
                     </button>
                   </div>
                 ))}
                 
                 <button
                   type="button"
-                  className="photo-add-placeholder"
+                  className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:text-gray-500"
                   onClick={() => setShowPhotoCapture(true)}
                 >
-                  <Plus size={20} className="photo-add-placeholder-icon" />
-                  <span className="photo-add-placeholder-text">Add</span>
+                  <Plus size={24} className="mb-1" />
+                  <span className="text-xs">Add</span>
                 </button>
               </div>
             ) : (
               <button
                 type="button"
-                className="photo-add-placeholder w-full h-32"
+                className="w-full h-32 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:text-gray-500"
                 onClick={() => setShowPhotoCapture(true)}
               >
-                <Camera size={32} className="photo-add-placeholder-icon" />
-                <span className="photo-add-placeholder-text">Tap to add photo evidence</span>
+                <Camera size={32} className="mb-2" />
+                <span>Tap to add photo evidence</span>
               </button>
             )}
           </div>
           
           {/* Delete option (only for edit mode) */}
           {isEditMode && onDelete && (
-            <div className="mt-8 p-4 bg-red-50 rounded-lg border border-red-200">
+            <div className="bg-white rounded-lg shadow-sm p-4">
               <div className="flex items-center text-red-600 mb-2">
                 <Trash2 size={18} className="mr-2" />
                 <h3 className="font-medium">Delete Finding</h3>
@@ -516,7 +515,7 @@ const FindingForm = ({
                 This will permanently remove this finding from the inspection.
               </p>
               <button 
-                className="modern-btn modern-btn--danger"
+                className="w-full py-2 bg-red-500 text-white rounded-lg font-medium"
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 Delete Finding
@@ -526,33 +525,25 @@ const FindingForm = ({
         </div>
       </div>
       
-      <div className="modern-bottom-bar">
-        <div className="modern-bottom-bar__content">
-          <button 
-            className="modern-btn modern-btn--secondary"
-            onClick={isEditMode ? onCancel : handleBackStep}
-          >
-            {isEditMode ? 'Cancel' : 'Back'}
-          </button>
-          
-          <button 
-            className="modern-btn modern-btn--primary"
-            onClick={handleSave}
-            disabled={loading || !deficiency.trim() || (!isEditMode && (!category || !subcategory))}
-          >
-            {loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save size={18} className="mr-2" />
-                {isEditMode ? 'Save Changes' : 'Save Finding'}
-              </>
-            )}
-          </button>
-        </div>
+      {/* Bottom Actions */}
+      <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t">
+        <button 
+          className={`w-full py-3 bg-${themeColor}-500 text-white rounded-lg font-medium flex items-center justify-center disabled:opacity-50`}
+          onClick={handleSave}
+          disabled={loading || !deficiency.trim() || (!isEditMode && (!category || !subcategory))}
+        >
+          {loading ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={18} className="mr-2" />
+              {isEditMode ? 'Save Changes' : 'Save Finding'}
+            </>
+          )}
+        </button>
       </div>
       
       {/* Photo Capture Modal */}
@@ -565,25 +556,25 @@ const FindingForm = ({
       
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="delete-confirm-modal">
-          <div className="delete-confirm-modal__content">
-            <div className="delete-confirm-modal__header">
-              <h3 className="delete-confirm-modal__title">Delete Finding?</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full overflow-hidden">
+            <div className="p-4 border-b">
+              <h3 className="font-semibold text-lg">Delete Finding?</h3>
             </div>
-            <div className="delete-confirm-modal__body">
-              <p className="delete-confirm-modal__message">
+            <div className="p-4">
+              <p className="text-gray-700">
                 Are you sure you want to delete this finding? This action cannot be undone.
               </p>
             </div>
-            <div className="delete-confirm-modal__footer">
+            <div className="flex flex-col p-4 border-t space-y-2">
               <button 
-                className="delete-confirm-modal__delete"
+                className="w-full py-2 bg-red-500 text-white rounded-lg font-medium"
                 onClick={handleDelete}
               >
                 Delete Finding
               </button>
               <button 
-                className="delete-confirm-modal__cancel"
+                className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium"
                 onClick={() => setShowDeleteConfirm(false)}
               >
                 Cancel

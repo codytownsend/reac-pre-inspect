@@ -1,36 +1,37 @@
 // src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
 
 // Components
 import Navigation from './components/Navigation';
 import PrivateRoute from './components/PrivateRoute';
 import Loading from './components/Loading';
 
-// Pages
+// Auth Pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+
+// Dashboard
 import Dashboard from './pages/dashboard/Dashboard';
+
+// Property Pages
 import Properties from './pages/properties/Properties';
 import PropertyDetail from './pages/properties/PropertyDetail';
 import NewProperty from './pages/properties/NewProperty';
 import EditProperty from './pages/properties/EditProperty';
+
+// Inspection Pages (Consolidated)
 import Inspections from './pages/inspections/Inspections';
 import NewInspection from './pages/inspections/NewInspection';
-import InspectionDetail from './pages/inspections/InspectionDetail';
-import FindingPhotoCapture from './components/FindingPhotoCapture';
-import InspectionReport from './pages/inspections/InspectionReport';
+import InspectionMain from './pages/inspections/InspectionMain';
+import AreaList from './pages/inspections/AreaList';
+import AreaDetail from './pages/inspections/AreaDetail';
+import AddAreaPage from './pages/inspections/AddAreaPage';
+import InspectionReportPage from './pages/inspections/InspectionReportPage';
+
+// Shared
 import SharedReport from './pages/shared/SharedReport';
 import Settings from './pages/settings/Settings';
-import InspectionMain from './pages/inspections/InspectionMain';
-import UnitAreaPage from './pages/inspections/UnitAreaPage';
-import InsideAreaPage from './pages/inspections/InsideAreaPage';
-import OutsideAreaPage from './pages/inspections/OutsideAreaPage';
-import AddUnitPage from './pages/inspections/AddUnitPage';
-import AddInsideAreaPage from './pages/inspections/AddInsideAreaPage';
-import AddOutsideAreaPage from './pages/inspections/AddOutsideAreaPage';
-import AreaDetailPage from './pages/inspections/AreaDetailPage';
 import NotFound from './pages/NotFound';
 
 // Context
@@ -48,120 +49,119 @@ const AppContent = () => {
   return (
     <div className="app">
       <Routes>
-        {/* Public routes - accessible without authentication */}
+        {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
-        {/* Shared report route - accessible without authentication */}
         <Route path="/shared/reports/:id" element={<SharedReport />} />
         
-        {/* Private routes - require authentication */}
+        {/* Private routes */}
         <Route path="/" element={
           <PrivateRoute>
             <Dashboard />
           </PrivateRoute>
         } />
         
+        {/* Property routes */}
         <Route path="/properties" element={
           <PrivateRoute>
             <Properties />
           </PrivateRoute>
         } />
-        
         <Route path="/properties/new" element={
           <PrivateRoute>
             <NewProperty />
           </PrivateRoute>
         } />
-        
         <Route path="/properties/:id" element={
           <PrivateRoute>
             <PropertyDetail />
           </PrivateRoute>
         } />
-        
         <Route path="/properties/:id/edit" element={
           <PrivateRoute>
             <EditProperty />
           </PrivateRoute>
         } />
         
+        {/* Inspection routes - consolidated */}
         <Route path="/inspections" element={
           <PrivateRoute>
             <Inspections />
           </PrivateRoute>
         } />
-        
         <Route path="/inspections/new" element={
           <PrivateRoute>
             <NewInspection />
           </PrivateRoute>
         } />
-        
-        <Route path="/inspections/:id/areas/:areaId/findings/:findingId/photo" element={
-          <PrivateRoute>
-            <FindingPhotoCapture />
-          </PrivateRoute>
-        } />
-        
-        <Route path="/inspections/:id/report" element={
-          <PrivateRoute>
-            <InspectionReport />
-          </PrivateRoute>
-        } />
-
-        <Route path="/settings" element={
-          <PrivateRoute>
-            <Settings />
-          </PrivateRoute>
-        } />
-
         <Route path="/inspections/:id" element={
           <PrivateRoute>
             <InspectionMain />
           </PrivateRoute>
         } />
-
-        {/* Unit Areas */}
-        <Route path="/inspections/:id/:areaType/add" element={
+        
+        {/* Area routes */}
+        <Route path="/inspections/:id/units" element={
+          <PrivateRoute>
+            <AreaList />
+          </PrivateRoute>
+        } />
+        <Route path="/inspections/:id/inside" element={
+          <PrivateRoute>
+            <AreaList />
+          </PrivateRoute>
+        } />
+        <Route path="/inspections/:id/outside" element={
+          <PrivateRoute>
+            <AreaList />
+          </PrivateRoute>
+        } />
+        
+        {/* Add area routes */}
+        <Route path="/inspections/:id/units/add" element={
           <PrivateRoute>
             <AddAreaPage />
           </PrivateRoute>
         } />
-
-        <Route path="/inspections/:id/units/add" element={
-          <PrivateRoute>
-            <AddUnitPage />
-          </PrivateRoute>
-        } />
-
-        <Route path="/inspections/:id/units/:areaId" element={
-          <PrivateRoute>
-            <AreaDetailPage />
-          </PrivateRoute>
-        } />
-
         <Route path="/inspections/:id/inside/add" element={
           <PrivateRoute>
-            <AddInsideAreaPage />
+            <AddAreaPage />
           </PrivateRoute>
         } />
-
-        <Route path="/inspections/:id/inside/:areaId" element={
-          <PrivateRoute>
-            <AreaDetailPage />
-          </PrivateRoute>
-        } />
-
         <Route path="/inspections/:id/outside/add" element={
           <PrivateRoute>
-            <AddOutsideAreaPage />
+            <AddAreaPage />
           </PrivateRoute>
         } />
-
+        
+        {/* Area detail routes */}
+        <Route path="/inspections/:id/units/:areaId" element={
+          <PrivateRoute>
+            <AreaDetail />
+          </PrivateRoute>
+        } />
+        <Route path="/inspections/:id/inside/:areaId" element={
+          <PrivateRoute>
+            <AreaDetail />
+          </PrivateRoute>
+        } />
         <Route path="/inspections/:id/outside/:areaId" element={
           <PrivateRoute>
-            <AreaDetailPage />
+            <AreaDetail />
+          </PrivateRoute>
+        } />
+        
+        {/* Report route */}
+        <Route path="/inspections/:id/report" element={
+          <PrivateRoute>
+            <InspectionReportPage />
+          </PrivateRoute>
+        } />
+        
+        {/* Settings */}
+        <Route path="/settings" element={
+          <PrivateRoute>
+            <Settings />
           </PrivateRoute>
         } />
         
