@@ -57,6 +57,32 @@ const UnitAreaPage = () => {
     navigate(`/inspections/${id}/units/add`);
   };
   
+  const getSeverityClass = (unit) => {
+    if (!unit.findings || unit.findings.length === 0) {
+      return 'minor';
+    }
+    
+    // Check for life-threatening findings
+    const hasLifeThreatening = unit.findings.some(f => f.severity === 'lifeThreatening');
+    if (hasLifeThreatening) {
+      return 'critical';
+    }
+    
+    // Check for severe findings
+    const hasSevere = unit.findings.some(f => f.severity === 'severe');
+    if (hasSevere) {
+      return 'serious';
+    }
+    
+    // Check for moderate findings
+    const hasModerate = unit.findings.some(f => f.severity === 'moderate');
+    if (hasModerate) {
+      return 'moderate';
+    }
+    
+    return 'minor';
+  };
+  
   const getSeverityIcon = (unit) => {
     if (!unit.findings || unit.findings.length === 0) {
       return <CheckCircle size={20} className="text-green-500" />;
@@ -65,22 +91,22 @@ const UnitAreaPage = () => {
     // Check for life-threatening findings
     const hasLifeThreatening = unit.findings.some(f => f.severity === 'lifeThreatening');
     if (hasLifeThreatening) {
-      return <AlertCircle size={20} className="text-red-500" />;
+      return <AlertCircle size={20} className="severity-icon--critical" />;
     }
     
     // Check for severe findings
     const hasSevere = unit.findings.some(f => f.severity === 'severe');
     if (hasSevere) {
-      return <AlertTriangle size={20} className="text-orange-500" />;
+      return <AlertTriangle size={20} className="severity-icon--serious" />;
     }
     
     // Check for moderate findings
     const hasModerate = unit.findings.some(f => f.severity === 'moderate');
     if (hasModerate) {
-      return <Clock size={20} className="text-yellow-500" />;
+      return <Clock size={20} className="severity-icon--moderate" />;
     }
     
-    return <CheckCircle size={20} className="text-green-500" />;
+    return <CheckCircle size={20} className="severity-icon--minor" />;
   };
   
   // Filter units based on search term
@@ -90,11 +116,9 @@ const UnitAreaPage = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading units...</p>
-        </div>
+      <div className="modern-loading-screen">
+        <div className="modern-loading-spinner"></div>
+        <p className="modern-loading-text">Loading units...</p>
       </div>
     );
   }
@@ -102,16 +126,16 @@ const UnitAreaPage = () => {
   if (!inspection) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <div className="bg-white p-6 rounded-xl shadow-sm max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle size={32} className="text-red-500" />
+        <div className="modern-empty-state">
+          <div className="modern-empty-state__icon">
+            <AlertCircle size={32} />
           </div>
-          <h2 className="text-xl font-bold mb-2">Inspection Not Found</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="modern-empty-state__title">Inspection Not Found</h2>
+          <p className="modern-empty-state__description">
             {error || "The inspection you're looking for doesn't exist or has been removed."}
           </p>
           <button 
-            className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium"
+            className="modern-btn modern-btn--primary"
             onClick={() => navigate('/inspections')}
           >
             Back to Inspections
@@ -124,15 +148,15 @@ const UnitAreaPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* App Bar */}
-      <div className="bg-white p-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
+      <div className="app-bar">
         <div className="flex items-center">
           <button
-            className="p-2 rounded-full hover:bg-gray-100 mr-2"
+            className="app-bar__back-button"
             onClick={() => navigate(`/inspections/${id}`)}
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-bold">Units</h1>
+          <h1 className="app-bar__title">Units</h1>
         </div>
         
         <div className="flex items-center">
@@ -150,14 +174,12 @@ const UnitAreaPage = () => {
       )}
       
       {/* Search Bar */}
-      <div className="p-4">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-400" />
-          </div>
+      <div className="modern-search-container">
+        <div className="modern-search-input-wrapper">
+          <Search size={18} className="modern-search-icon" />
           <input
             type="text"
-            className="bg-white border border-gray-300 rounded-lg py-2 pl-10 pr-4 block w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="modern-search-input"
             placeholder="Search units..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -168,15 +190,16 @@ const UnitAreaPage = () => {
       {/* Units List */}
       <div className="px-4">
         {filteredUnits.length === 0 ? (
-          <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+          <div className="modern-empty-state">
             {searchTerm ? (
               <>
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search size={24} className="text-gray-400" />
+                <div className="modern-empty-state__icon">
+                  <Search size={24} />
                 </div>
-                <p className="text-gray-600 mb-6">No units found matching "{searchTerm}"</p>
+                <h2 className="modern-empty-state__title">No results found</h2>
+                <p className="modern-empty-state__description">No units found matching "{searchTerm}"</p>
                 <button 
-                  className="py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center justify-center mx-auto"
+                  className="modern-btn modern-btn--secondary"
                   onClick={() => setSearchTerm('')}
                 >
                   Clear Search
@@ -184,12 +207,13 @@ const UnitAreaPage = () => {
               </>
             ) : (
               <>
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="modern-empty-state__icon">
                   <Home size={24} className="text-blue-500" />
                 </div>
-                <p className="text-gray-600 mb-6">No units have been added yet.</p>
+                <h2 className="modern-empty-state__title">No units added yet</h2>
+                <p className="modern-empty-state__description">Add your first unit to begin the inspection</p>
                 <button 
-                  className="py-3 px-4 bg-blue-500 text-white rounded-lg font-medium flex items-center justify-center mx-auto"
+                  className="modern-btn modern-btn--primary"
                   onClick={handleAddUnit}
                 >
                   <Plus size={18} className="mr-2" /> Add First Unit
@@ -198,33 +222,29 @@ const UnitAreaPage = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-3 mb-24">
+          <div className="modern-list">
             {filteredUnits.map((unit) => (
               <div 
                 key={unit.id} 
-                className="bg-white rounded-xl shadow-sm overflow-hidden"
+                className="modern-list-item modern-list-item--interactive"
+                onClick={() => navigate(`/inspections/${id}/units/${unit.id}`)}
               >
-                <button 
-                  className="w-full p-4 flex items-center justify-between"
-                  onClick={() => navigate(`/inspections/${id}/units/${unit.id}`)}
-                >
-                  <div className="flex items-center">
-                    <div className="bg-blue-100 p-3 rounded-lg mr-3">
-                      <Home size={20} className="text-blue-500" />
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-medium">{unit.name}</h3>
-                      <p className="text-sm text-gray-600">
-                        {unit.findings?.length || 0} finding{unit.findings?.length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
+                <div className="modern-list-item__content">
+                  <div className="modern-list-item__icon modern-list-item__icon--blue">
+                    <Home size={20} />
+                  </div>
+                  <div className="modern-list-item__details">
+                    <h3 className="modern-list-item__title">{unit.name}</h3>
+                    <p className="modern-list-item__subtitle">
+                      {unit.findings?.length || 0} finding{unit.findings?.length !== 1 ? 's' : ''}
+                    </p>
                   </div>
                   
-                  <div className="flex items-center">
+                  <div className="modern-list-item__action">
                     {getSeverityIcon(unit)}
                     <ChevronRight size={20} className="text-gray-400 ml-1" />
                   </div>
-                </button>
+                </div>
               </div>
             ))}
           </div>
@@ -232,15 +252,13 @@ const UnitAreaPage = () => {
       </div>
       
       {/* Floating Action Button */}
-      <div className="fixed right-4 bottom-20">
-        <button 
-          className="w-14 h-14 bg-blue-500 rounded-full text-white shadow-lg flex items-center justify-center"
-          onClick={handleAddUnit}
-          aria-label="Add Unit"
-        >
-          <Plus size={24} />
-        </button>
-      </div>
+      <button
+        className="fab fab--blue"
+        onClick={handleAddUnit}
+        aria-label="Add Unit"
+      >
+        <Plus size={24} />
+      </button>
     </div>
   );
 };

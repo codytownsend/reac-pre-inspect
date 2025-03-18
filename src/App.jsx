@@ -31,7 +31,6 @@ import AddUnitPage from './pages/inspections/AddUnitPage';
 import AddInsideAreaPage from './pages/inspections/AddInsideAreaPage';
 import AddOutsideAreaPage from './pages/inspections/AddOutsideAreaPage';
 import AreaDetailPage from './pages/inspections/AreaDetailPage';
-import NspireStandardsPage from './pages/inspections/NspireStandardsPage';
 import NotFound from './pages/NotFound';
 
 // Context
@@ -177,13 +176,6 @@ const AppContent = () => {
         <Route path="/inspections/:id/outside/:areaId" element={
           <PrivateRoute>
             <AreaDetailPage />
-          </PrivateRoute>
-        } />
-
-        {/* NSPIRE Standards Reference */}
-        <Route path="/inspections/:id/standards" element={
-          <PrivateRoute>
-            <NspireStandardsPage />
           </PrivateRoute>
         } />
         

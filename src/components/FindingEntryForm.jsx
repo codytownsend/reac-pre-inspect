@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useInspection } from '../context/InspectionContext';
 import FindingPhotoCapture from './FindingPhotoCapture';
 import { 
@@ -9,10 +9,7 @@ import {
   AlertTriangle, 
   Save,
   CheckCircle,
-  ChevronRight,
-  X,
-  ArrowLeft,
-  ArrowRight
+  X
 } from 'lucide-react';
 
 const FindingEntryForm = ({ 
@@ -179,7 +176,7 @@ const FindingEntryForm = ({
   // Category Selection View (Step 1)
   if (step === 1) {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col bg-gray-50">
         <div className="p-4 bg-white sticky top-0 z-10 border-b">
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">1</div>
@@ -200,31 +197,34 @@ const FindingEntryForm = ({
         )}
         
         <div className="flex-1 overflow-auto p-4">
-          <div className="grid gap-3">
+          <div className="modern-list">
             {filteredCategories.map(categoryKey => {
               const category = nspireCategories[categoryKey];
               if (!category) return null;
               
               return (
-                <button
+                <div
                   key={categoryKey}
-                  className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center"
+                  className="modern-list-item modern-list-item--interactive"
                   onClick={() => handleCategorySelect(categoryKey)}
                 >
-                  <div className="flex-1">
-                    <div className="font-medium text-left">{category.name}</div>
-                    <div className="text-sm text-gray-500 text-left">{category.subcategories.length} subcategories</div>
+                  <div className="modern-list-item__content">
+                    <div className="modern-list-item__details">
+                      <h3 className="modern-list-item__title">{category.name}</h3>
+                      <p className="modern-list-item__subtitle">{category.subcategories.length} subcategories</p>
+                    </div>
+                    <ChevronRight size={20} className="text-gray-400" />
                   </div>
-                  <ChevronRight size={20} className="text-gray-400" />
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
         
-        <div className="p-4 bg-white border-t sticky bottom-0">
+        <div className="modern-bottom-bar">
           <button 
-            className="w-full p-3 bg-gray-100 rounded-lg flex items-center justify-center font-medium"
+            className="modern-btn modern-btn--secondary"
+            style={{ width: '100%' }}
             onClick={onCancel}
           >
             Cancel
@@ -239,7 +239,7 @@ const FindingEntryForm = ({
     const category = nspireCategories[finding.category];
     
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col bg-gray-50">
         <div className="p-4 bg-white sticky top-0 z-10 border-b">
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">2</div>
@@ -263,28 +263,31 @@ const FindingEntryForm = ({
         )}
         
         <div className="flex-1 overflow-auto p-4">
-          <div className="grid gap-3">
+          <div className="modern-list">
             {category?.subcategories.map(subcategory => (
-              <button
+              <div
                 key={subcategory}
-                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center"
+                className="modern-list-item modern-list-item--interactive"
                 onClick={() => handleSubcategorySelect(subcategory)}
               >
-                <div className="font-medium text-left flex-1">{subcategory}</div>
-                <ChevronRight size={20} className="text-gray-400" />
-              </button>
+                <div className="modern-list-item__content">
+                  <h3 className="modern-list-item__title">{subcategory}</h3>
+                  <ChevronRight size={20} className="text-gray-400" />
+                </div>
+              </div>
             ))}
           </div>
         </div>
         
-        <div className="p-4 bg-white border-t sticky bottom-0 flex gap-3">
-          <button 
-            className="flex-1 p-3 bg-gray-100 rounded-lg flex items-center justify-center font-medium"
-            onClick={handleBack}
-          >
-            <ArrowLeft size={18} className="mr-2" />
-            Back
-          </button>
+        <div className="modern-bottom-bar">
+          <div className="modern-bottom-bar__content">
+            <button 
+              className="modern-btn modern-btn--secondary"
+              onClick={handleBack}
+            >
+              Back
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -292,7 +295,7 @@ const FindingEntryForm = ({
   
   // Finding Details View (Step 3)
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-gray-50">
       <div className="p-4 bg-white sticky top-0 z-10 border-b">
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">3</div>
@@ -316,147 +319,149 @@ const FindingEntryForm = ({
       )}
       
       <div className="flex-1 overflow-auto p-4">
-        {/* Deficiency Description */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Deficiency Description *
-          </label>
-          <textarea
-            name="deficiency"
-            value={finding.deficiency}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            rows="3"
-            placeholder="Describe what's wrong..."
-            required
-          />
-        </div>
-        
-        {/* Severity Selection */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Severity
-          </label>
-          
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            {['lifeThreatening', 'severe', 'moderate', 'low'].map(severity => {
-              const details = getSeverityDetails(severity);
-              return (
-                <button
-                  key={severity}
-                  type="button"
-                  className={`p-3 rounded-lg border ${
-                    finding.severity === severity 
-                      ? `${details.border} ${details.bg}` 
-                      : 'border-gray-200'
-                  } flex flex-col items-center justify-center`}
-                  onClick={() => setFinding(prev => ({ ...prev, severity }))}
-                >
-                  <div className={`${finding.severity === severity ? details.text : 'text-gray-400'}`}>
-                    {details.icon}
-                  </div>
-                  <div className="text-sm font-medium mt-1">{details.name}</div>
-                </button>
-              );
-            })}
+        <div className="finding-form">
+          {/* Deficiency Description */}
+          <div className="finding-form__group">
+            <label className="finding-form__label">
+              Deficiency Description *
+            </label>
+            <textarea
+              name="deficiency"
+              value={finding.deficiency}
+              onChange={handleChange}
+              className="finding-form__textarea"
+              rows="3"
+              placeholder="Describe what's wrong..."
+              required
+            ></textarea>
           </div>
           
-          <div className={`p-3 rounded-lg ${severityDetails.bg} ${severityDetails.text} flex items-center text-sm`}>
-            <Clock size={16} className="mr-2" />
-            Required repair timeframe: <span className="font-bold ml-1">{severityDetails.timeframe}</span>
-          </div>
-        </div>
-        
-        {/* Notes */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notes (Optional)
-          </label>
-          <textarea
-            name="notes"
-            value={finding.notes}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            rows="2"
-            placeholder="Add any additional notes..."
-          />
-        </div>
-        
-        {/* Photos */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-gray-700">Photos</label>
-            <button
-              type="button"
-              className="text-blue-500 text-sm font-medium flex items-center"
-              onClick={() => setShowPhotoCapture(true)}
-            >
-              <Camera size={16} className="mr-1" /> 
-              Add Photo
-            </button>
-          </div>
-          
-          {finding.photos.length > 0 ? (
-            <div className="grid grid-cols-3 gap-3">
-              {finding.photos.map((photo, index) => (
-                <div 
-                  key={index} 
-                  className="aspect-square relative rounded-lg overflow-hidden border border-gray-200"
-                >
-                  <img 
-                    src={photo.data} 
-                    alt={`Photo ${index+1}`} 
-                    className="w-full h-full object-cover"
-                  />
+          {/* Severity Selection */}
+          <div className="finding-form__group">
+            <label className="finding-form__label">
+              Severity
+            </label>
+            
+            <div className="finding-form__select-group">
+              {['lifeThreatening', 'severe', 'moderate', 'low'].map(severity => {
+                const details = getSeverityDetails(severity);
+                return (
                   <button
+                    key={severity}
                     type="button"
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
-                    onClick={() => removePhoto(index)}
+                    className={`finding-form__select-option ${
+                      finding.severity === severity 
+                        ? 'finding-form__select-option--selected' 
+                        : ''
+                    }`}
+                    onClick={() => setFinding(prev => ({ ...prev, severity }))}
                   >
-                    <X size={14} />
+                    <div className={`finding-form__select-option-icon ${finding.severity === severity ? details.text : 'text-gray-400'}`}>
+                      {details.icon}
+                    </div>
+                    <div className="finding-form__select-option-label">{details.name}</div>
                   </button>
-                </div>
-              ))}
-              
+                );
+              })}
+            </div>
+            
+            <div className={`finding-form__severity-indicator finding-form__severity-indicator--${finding.severity === 'lifeThreatening' ? 'critical' : finding.severity === 'severe' ? 'serious' : finding.severity === 'moderate' ? 'moderate' : 'minor'}`}>
+              <Clock size={16} className="finding-form__severity-icon" />
+              Required repair timeframe: <span className="font-bold ml-1">{severityDetails.timeframe}</span>
+            </div>
+          </div>
+          
+          {/* Notes */}
+          <div className="finding-form__group">
+            <label className="finding-form__label">
+              Notes (Optional)
+            </label>
+            <textarea
+              name="notes"
+              value={finding.notes}
+              onChange={handleChange}
+              className="finding-form__textarea"
+              rows="2"
+              placeholder="Add any additional notes..."
+            ></textarea>
+          </div>
+          
+          {/* Photos */}
+          <div className="photo-upload-section">
+            <div className="photo-upload-section__title">
+              <label className="photo-upload-section__title-text">Photos</label>
               <button
                 type="button"
-                className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400"
+                className="photo-upload-section__add-button"
                 onClick={() => setShowPhotoCapture(true)}
               >
-                <Plus size={24} />
-                <span className="text-xs mt-1">Add</span>
+                <Camera size={16} className="mr-1" /> 
+                Add Photo
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400"
-              onClick={() => setShowPhotoCapture(true)}
-            >
-              <Camera size={32} />
-              <span className="mt-2">Tap to add photo evidence</span>
-            </button>
-          )}
+            
+            {finding.photos.length > 0 ? (
+              <div className="photo-grid">
+                {finding.photos.map((photo, index) => (
+                  <div 
+                    key={index} 
+                    className="photo-thumbnail"
+                  >
+                    <img 
+                      src={photo.data} 
+                      alt={`Photo ${index+1}`} 
+                    />
+                    <button
+                      type="button"
+                      className="photo-thumbnail__remove"
+                      onClick={() => removePhoto(index)}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+                
+                <button
+                  type="button"
+                  className="photo-add-placeholder"
+                  onClick={() => setShowPhotoCapture(true)}
+                >
+                  <Plus size={20} className="photo-add-placeholder-icon" />
+                  <span className="photo-add-placeholder-text">Add</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="photo-add-placeholder w-full h-32"
+                onClick={() => setShowPhotoCapture(true)}
+              >
+                <Camera size={32} className="photo-add-placeholder-icon" />
+                <span className="photo-add-placeholder-text">Tap to add photo evidence</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
       
-      <div className="p-4 bg-white border-t sticky bottom-0 flex gap-3">
-        <button 
-          className="p-3 bg-gray-100 rounded-lg flex items-center justify-center font-medium"
-          onClick={handleBack}
-        >
-          <ArrowLeft size={18} className="mr-2" />
-          Back
-        </button>
-        
-        <button 
-          className="flex-1 p-3 bg-blue-500 text-white rounded-lg flex items-center justify-center font-medium disabled:opacity-50"
-          onClick={handleSubmit}
-          disabled={!finding.deficiency.trim()}
-        >
-          <Save size={18} className="mr-2" />
-          Save Finding
-        </button>
+      <div className="modern-bottom-bar">
+        <div className="modern-bottom-bar__content">
+          <button 
+            className="modern-btn modern-btn--secondary"
+            onClick={handleBack}
+          >
+            Back
+          </button>
+          
+          <button 
+            className="modern-btn modern-btn--primary"
+            onClick={handleSubmit}
+            disabled={!finding.deficiency.trim()}
+          >
+            <Save size={18} className="mr-2" />
+            Save Finding
+          </button>
+        </div>
       </div>
       
       {/* Photo Capture Modal */}

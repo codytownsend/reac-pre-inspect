@@ -110,12 +110,12 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="photo-capture">
       {/* Header */}
-      <div className="bg-black bg-opacity-75 p-4 flex justify-between items-center">
-        <h2 className="text-white text-lg font-medium">Capture Photo</h2>
+      <div className="photo-capture__header">
+        <h2 className="photo-capture__title">Capture Photo</h2>
         <button 
-          className="text-white p-2 rounded-full hover:bg-gray-800"
+          className="photo-capture__close"
           onClick={onClose}
           aria-label="Close"
         >
@@ -124,45 +124,36 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
       </div>
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col bg-black relative">
+      <div className="photo-capture__content">
         {capturedImage ? (
           // Show captured image
-          <div className="flex-1 flex items-center justify-center">
-            <img 
-              src={capturedImage} 
-              alt="Captured" 
-              className="max-h-full max-w-full object-contain"
-            />
-          </div>
+          <img 
+            src={capturedImage} 
+            alt="Captured" 
+            className="photo-capture__preview"
+          />
         ) : (
           // Show camera view or error
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <>
             {loading ? (
               // Loading state
-              <div className="text-white flex flex-col items-center">
-                <Loader size={48} className="animate-spin mb-4" />
+              <div className="photo-capture__loading">
+                <div className="photo-capture__loading-spinner"></div>
                 <p>Accessing camera...</p>
               </div>
             ) : error ? (
               // Error state
-              <div className="text-white p-6 flex flex-col items-center text-center">
-                <div className="bg-red-500 rounded-full p-4 mb-4">
+              <div className="photo-capture__error">
+                <div className="photo-capture__error-icon">
                   <X size={32} />
                 </div>
-                <p className="mb-6">{error}</p>
+                <p className="photo-capture__error-message">{error}</p>
                 <button 
-                  className="bg-white text-black py-2 px-4 rounded-lg mb-4 flex items-center"
+                  className="modern-btn modern-btn--primary"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Image size={20} className="mr-2" /> 
                   Select from Gallery
-                </button>
-                <button 
-                  className="bg-blue-500 text-white py-2 px-4 rounded-lg flex items-center"
-                  onClick={startCamera}
-                >
-                  <RefreshCw size={20} className="mr-2" /> 
-                  Try Again
                 </button>
                 <input 
                   type="file" 
@@ -170,6 +161,7 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
                   className="hidden"
                   accept="image/*" 
                   onChange={handleFileUpload}
+                  style={{ display: 'none' }}
                 />
               </div>
             ) : (
@@ -178,29 +170,29 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
-                className="w-full h-full object-cover"
+                className="photo-capture__video"
                 onCanPlay={() => setLoading(false)}
               />
             )}
-          </div>
+          </>
         )}
         
-        <canvas ref={canvasRef} className="hidden" />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
       
       {/* Footer controls */}
-      <div className="bg-black bg-opacity-75 p-4">
+      <div className="photo-capture__footer">
         {capturedImage ? (
           // Controls for captured image
-          <div className="flex justify-between">
+          <div className="photo-capture__controls">
             <button 
-              className="bg-gray-700 text-white px-6 py-3 rounded-lg flex items-center"
+              className="photo-capture__retake"
               onClick={handleRetake}
             >
               <RefreshCw size={20} className="mr-2" /> Retake
             </button>
             <button 
-              className="bg-green-500 text-white px-6 py-3 rounded-lg flex items-center"
+              className="photo-capture__use"
               onClick={handleSave}
             >
               <Check size={20} className="mr-2" /> Use Photo
@@ -208,20 +200,18 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
           </div>
         ) : !error && !loading ? (
           // Camera controls
-          <div className="flex justify-center">
-            <button 
-              className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-4 border-gray-300" 
-              onClick={capturePhoto}
-              aria-label="Take photo"
-            >
-              <div className="w-12 h-12 rounded-full bg-white"></div>
-            </button>
-          </div>
+          <button 
+            className="photo-capture__capture-button" 
+            onClick={capturePhoto}
+            aria-label="Take photo"
+          >
+            <div className="photo-capture__capture-button-inner"></div>
+          </button>
         ) : (
           // If there's an error or loading, show option to select from gallery
           !loading && (
             <button 
-              className="w-full bg-blue-500 text-white py-3 rounded-lg flex items-center justify-center"
+              className="photo-capture__upload-button"
               onClick={() => fileInputRef.current?.click()}
             >
               <Image size={20} className="mr-2" /> 
