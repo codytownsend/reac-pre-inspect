@@ -123,9 +123,9 @@ const AppContent = () => {
         } />
 
         {/* Unit Areas */}
-        <Route path="/inspections/:id/areas/units" element={
+        <Route path="/inspections/:id/:areaType/add" element={
           <PrivateRoute>
-            <UnitAreaPage />
+            <AddAreaPage />
           </PrivateRoute>
         } />
 
@@ -141,13 +141,6 @@ const AppContent = () => {
           </PrivateRoute>
         } />
 
-        {/* Inside Areas */}
-        <Route path="/inspections/:id/areas/inside" element={
-          <PrivateRoute>
-            <InsideAreaPage />
-          </PrivateRoute>
-        } />
-
         <Route path="/inspections/:id/inside/add" element={
           <PrivateRoute>
             <AddInsideAreaPage />
@@ -157,13 +150,6 @@ const AppContent = () => {
         <Route path="/inspections/:id/inside/:areaId" element={
           <PrivateRoute>
             <AreaDetailPage />
-          </PrivateRoute>
-        } />
-
-        {/* Outside Areas */}
-        <Route path="/inspections/:id/areas/outside" element={
-          <PrivateRoute>
-            <OutsideAreaPage />
           </PrivateRoute>
         } />
 
