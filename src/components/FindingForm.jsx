@@ -1,37 +1,56 @@
-import React, { useState } from 'react';
+// src/components/FindingForm.jsx
+import React, { useState, useEffect } from 'react';
 import { useInspection } from '../context/InspectionContext';
 import FindingPhotoCapture from './FindingPhotoCapture';
 import { 
   Camera, 
-  Plus, 
+  X, 
   AlertCircle, 
-  Clock, 
   AlertTriangle, 
-  Save,
+  Clock,
   CheckCircle,
-  X
+  Save,
+  Plus,
+  Trash2
 } from 'lucide-react';
 
-const FindingEntryForm = ({ 
+/**
+ * A standardized form for adding and editing findings across all area types
+ * 
+ * @param {Object} props
+ * @param {string} props.inspectionId - The ID of the inspection
+ * @param {string} props.areaId - The ID of the area
+ * @param {string} props.areaType - The type of area ('unit', 'inside', or 'outside')
+ * @param {Object} props.initialFinding - Initial finding data for editing (null for new findings)
+ * @param {Function} props.onSave - Callback when finding is saved
+ * @param {Function} props.onCancel - Callback when form is canceled
+ * @param {Function} props.onDelete - Callback for deleting a finding (only used in edit mode)
+ */
+const FindingForm = ({ 
   inspectionId, 
   areaId, 
   areaType, 
-  onSave,
-  onCancel 
+  initialFinding = null, 
+  onSave, 
+  onCancel,
+  onDelete = null
 }) => {
   const { nspireCategories } = useInspection();
-  const [step, setStep] = useState(1); // 1: Category, 2: Subcategory, 3: Details
-  const [finding, setFinding] = useState({
-    category: '',
-    subcategory: '',
-    deficiency: '',
-    severity: 'moderate', // Default to moderate
-    notes: '',
-    photos: []
-  });
-  
-  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const isEditMode = !!initialFinding;
+  
+  // Form data
+  const [currentStep, setCurrentStep] = useState(initialFinding ? 3 : 1); // Skip category/subcategory if editing
+  const [category, setCategory] = useState(initialFinding?.category || '');
+  const [subcategory, setSubcategory] = useState(initialFinding?.subcategory || '');
+  const [deficiency, setDeficiency] = useState(initialFinding?.deficiency || '');
+  const [severity, setSeverity] = useState(initialFinding?.severity || 'moderate');
+  const [notes, setNotes] = useState(initialFinding?.notes || '');
+  const [repairStatus, setRepairStatus] = useState(initialFinding?.status || 'open');
+  const [photos, setPhotos] = useState(initialFinding?.photos || []);
   
   // Filter categories based on area type
   const getFilteredCategories = () => {
@@ -47,76 +66,85 @@ const FindingEntryForm = ({
 
   const filteredCategories = getFilteredCategories();
   
-  const handleCategorySelect = (category) => {
-    setFinding(prev => ({
-      ...prev,
-      category,
-      subcategory: ''
-    }));
-    setStep(2);
-  };
-  
-  const handleSubcategorySelect = (subcategory) => {
-    setFinding(prev => ({
-      ...prev,
-      subcategory
-    }));
-    setStep(3);
-  };
-  
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFinding(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handlePhotoCapture = (photoData) => {
-    setFinding(prev => ({
-      ...prev,
-      photos: [...prev.photos, { data: photoData, timestamp: new Date().toISOString() }]
-    }));
+    const newPhoto = {
+      id: Date.now().toString(),
+      data: photoData,
+      timestamp: new Date().toISOString()
+    };
+    
+    setPhotos(prev => [...prev, newPhoto]);
     setShowPhotoCapture(false);
   };
-
-  const removePhoto = (index) => {
-    setFinding(prev => ({
-      ...prev,
-      photos: prev.photos.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSubmit = () => {
-    // Validate fields
-    if (!finding.category || !finding.subcategory || !finding.deficiency) {
-      setError('Please fill out all required fields');
-      return;
-    }
-
-    // Create new finding object
-    const newFinding = {
-      ...finding,
-      id: Date.now().toString(),
-      areaId: areaId,
-      created: new Date().toISOString()
-    };
-
-    // Call onSave callback
-    onSave(newFinding);
+  
+  const handleRemovePhoto = (photoId) => {
+    setPhotos(prev => prev.filter(photo => photo.id !== photoId));
   };
   
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
+  const handleCategorySelect = (selectedCategory) => {
+    setCategory(selectedCategory);
+    setCurrentStep(2);
+  };
+  
+  const handleSubcategorySelect = (selectedSubcategory) => {
+    setSubcategory(selectedSubcategory);
+    setCurrentStep(3);
+  };
+  
+  const handleBackStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     } else {
       onCancel();
     }
   };
   
+  const handleSave = () => {
+    if (!category || !subcategory || !deficiency.trim()) {
+      setError('Please fill out all required fields');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // Create finding object
+      const findingData = {
+        ...(initialFinding || {}),
+        id: initialFinding?.id || `finding-${Date.now()}`,
+        area: areaType,
+        areaId: areaId,
+        category: category,
+        subcategory: subcategory,
+        deficiency: deficiency,
+        severity: severity,
+        notes: notes,
+        status: repairStatus || 'open',
+        photos: photos,
+        ...(initialFinding 
+          ? { updatedAt: new Date().toISOString() } 
+          : { createdAt: new Date().toISOString() })
+      };
+      
+      // Call save callback
+      onSave(findingData);
+      
+    } catch (error) {
+      console.error("Error saving finding:", error);
+      setError('Error saving finding');
+      setLoading(false);
+    }
+  };
+  
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(initialFinding.id);
+    }
+  };
+  
   // Get severity details
-  const getSeverityDetails = (severity) => {
-    switch (severity) {
+  const getSeverityDetails = (severityLevel) => {
+    switch (severityLevel) {
       case 'lifeThreatening':
         return {
           icon: <AlertCircle size={20} />,
@@ -171,10 +199,10 @@ const FindingEntryForm = ({
   };
   
   // Get current severity details
-  const severityDetails = getSeverityDetails(finding.severity);
+  const severityDetails = getSeverityDetails(severity);
   
   // Category Selection View (Step 1)
-  if (step === 1) {
+  if (currentStep === 1) {
     return (
       <div className="h-full flex flex-col bg-gray-50">
         <div className="p-4 bg-white sticky top-0 z-10 border-b">
@@ -190,7 +218,7 @@ const FindingEntryForm = ({
         </div>
         
         {error && (
-          <div className="mx-4 mt-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center">
+          <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
             <AlertCircle size={20} className="mr-2" />
             {error}
           </div>
@@ -213,7 +241,9 @@ const FindingEntryForm = ({
                       <h3 className="modern-list-item__title">{category.name}</h3>
                       <p className="modern-list-item__subtitle">{category.subcategories.length} subcategories</p>
                     </div>
-                    <ChevronRight size={20} className="text-gray-400" />
+                    <div className="modern-list-item__action">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
                   </div>
                 </div>
               );
@@ -222,21 +252,22 @@ const FindingEntryForm = ({
         </div>
         
         <div className="modern-bottom-bar">
-          <button 
-            className="modern-btn modern-btn--secondary"
-            style={{ width: '100%' }}
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
+          <div className="modern-bottom-bar__content">
+            <button 
+              className="modern-btn modern-btn--secondary"
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     );
   }
   
   // Subcategory Selection View (Step 2)
-  if (step === 2) {
-    const category = nspireCategories[finding.category];
+  if (currentStep === 2) {
+    const categoryData = nspireCategories[category];
     
     return (
       <div className="h-full flex flex-col bg-gray-50">
@@ -251,12 +282,12 @@ const FindingEntryForm = ({
             <div className="h-1 bg-gray-300 rounded-full flex-1 ml-1"></div>
           </div>
           <div className="mt-2 px-3 py-2 bg-gray-100 rounded-lg text-sm">
-            Selected: <span className="font-medium">{category?.name}</span>
+            Selected: <span className="font-medium">{categoryData?.name}</span>
           </div>
         </div>
         
         {error && (
-          <div className="mx-4 mt-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center">
+          <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
             <AlertCircle size={20} className="mr-2" />
             {error}
           </div>
@@ -264,15 +295,19 @@ const FindingEntryForm = ({
         
         <div className="flex-1 overflow-auto p-4">
           <div className="modern-list">
-            {category?.subcategories.map(subcategory => (
+            {categoryData?.subcategories.map(sub => (
               <div
-                key={subcategory}
+                key={sub}
                 className="modern-list-item modern-list-item--interactive"
-                onClick={() => handleSubcategorySelect(subcategory)}
+                onClick={() => handleSubcategorySelect(sub)}
               >
                 <div className="modern-list-item__content">
-                  <h3 className="modern-list-item__title">{subcategory}</h3>
-                  <ChevronRight size={20} className="text-gray-400" />
+                  <div className="modern-list-item__details">
+                    <h3 className="modern-list-item__title">{sub}</h3>
+                  </div>
+                  <div className="modern-list-item__action">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </div>
                 </div>
               </div>
             ))}
@@ -283,7 +318,7 @@ const FindingEntryForm = ({
           <div className="modern-bottom-bar__content">
             <button 
               className="modern-btn modern-btn--secondary"
-              onClick={handleBack}
+              onClick={handleBackStep}
             >
               Back
             </button>
@@ -306,13 +341,15 @@ const FindingEntryForm = ({
           <div className="h-1 bg-blue-500 rounded-full flex-1 ml-1"></div>
           <div className="h-1 bg-blue-500 rounded-full flex-1 ml-1"></div>
         </div>
-        <div className="mt-2 px-3 py-2 bg-gray-100 rounded-lg text-sm">
-          <span className="font-medium">{nspireCategories[finding.category]?.name}: {finding.subcategory}</span>
-        </div>
+        {!isEditMode && (
+          <div className="mt-2 px-3 py-2 bg-gray-100 rounded-lg text-sm">
+            <span className="font-medium">{nspireCategories[category]?.name}: {subcategory}</span>
+          </div>
+        )}
       </div>
       
       {error && (
-        <div className="mx-4 mt-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center">
+        <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
           <AlertCircle size={20} className="mr-2" />
           {error}
         </div>
@@ -326,12 +363,11 @@ const FindingEntryForm = ({
               Deficiency Description *
             </label>
             <textarea
-              name="deficiency"
-              value={finding.deficiency}
-              onChange={handleChange}
-              className="finding-form__textarea"
-              rows="3"
+              value={deficiency}
+              onChange={(e) => setDeficiency(e.target.value)}
               placeholder="Describe what's wrong..."
+              rows={3}
+              className="finding-form__textarea"
               required
             ></textarea>
           </div>
@@ -343,20 +379,20 @@ const FindingEntryForm = ({
             </label>
             
             <div className="finding-form__select-group">
-              {['lifeThreatening', 'severe', 'moderate', 'low'].map(severity => {
-                const details = getSeverityDetails(severity);
+              {['lifeThreatening', 'severe', 'moderate', 'low'].map(severityLevel => {
+                const details = getSeverityDetails(severityLevel);
                 return (
                   <button
-                    key={severity}
+                    key={severityLevel}
                     type="button"
                     className={`finding-form__select-option ${
-                      finding.severity === severity 
+                      severity === severityLevel 
                         ? 'finding-form__select-option--selected' 
                         : ''
                     }`}
-                    onClick={() => setFinding(prev => ({ ...prev, severity }))}
+                    onClick={() => setSeverity(severityLevel)}
                   >
-                    <div className={`finding-form__select-option-icon ${finding.severity === severity ? details.text : 'text-gray-400'}`}>
+                    <div className={`finding-form__select-option-icon ${severity === severityLevel ? details.text : 'text-gray-400'}`}>
                       {details.icon}
                     </div>
                     <div className="finding-form__select-option-label">{details.name}</div>
@@ -365,11 +401,39 @@ const FindingEntryForm = ({
               })}
             </div>
             
-            <div className={`finding-form__severity-indicator finding-form__severity-indicator--${finding.severity === 'lifeThreatening' ? 'critical' : finding.severity === 'severe' ? 'serious' : finding.severity === 'moderate' ? 'moderate' : 'minor'}`}>
+            <div className={`finding-form__severity-indicator finding-form__severity-indicator--${
+              severity === 'lifeThreatening' ? 'critical' : 
+              severity === 'severe' ? 'serious' : 
+              severity === 'moderate' ? 'moderate' : 'minor'
+            }`}>
               <Clock size={16} className="finding-form__severity-icon" />
               Required repair timeframe: <span className="font-bold ml-1">{severityDetails.timeframe}</span>
+              {areaType === 'unit' && 
+                <span className="ml-1">
+                  | {severity === 'low' ? 'Pass' : 'Fail'}
+                </span>
+              }
             </div>
           </div>
+          
+          {/* Repair Status (only for edit mode) */}
+          {isEditMode && (
+            <div className="finding-form__group">
+              <label className="finding-form__label">
+                Repair Status
+              </label>
+              <select
+                value={repairStatus}
+                onChange={(e) => setRepairStatus(e.target.value)}
+                className="finding-form__select"
+              >
+                <option value="open">Open</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="repaired">Repaired</option>
+                <option value="verified">Verified</option>
+              </select>
+            </div>
+          )}
           
           {/* Notes */}
           <div className="finding-form__group">
@@ -377,12 +441,11 @@ const FindingEntryForm = ({
               Notes (Optional)
             </label>
             <textarea
-              name="notes"
-              value={finding.notes}
-              onChange={handleChange}
-              className="finding-form__textarea"
-              rows="2"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any additional notes..."
+              rows={2}
+              className="finding-form__textarea"
             ></textarea>
           </div>
           
@@ -400,11 +463,11 @@ const FindingEntryForm = ({
               </button>
             </div>
             
-            {finding.photos.length > 0 ? (
+            {photos.length > 0 ? (
               <div className="photo-grid">
-                {finding.photos.map((photo, index) => (
+                {photos.map((photo, index) => (
                   <div 
-                    key={index} 
+                    key={photo.id || index} 
                     className="photo-thumbnail"
                   >
                     <img 
@@ -414,7 +477,7 @@ const FindingEntryForm = ({
                     <button
                       type="button"
                       className="photo-thumbnail__remove"
-                      onClick={() => removePhoto(index)}
+                      onClick={() => handleRemovePhoto(photo.id || index)}
                     >
                       <X size={12} />
                     </button>
@@ -441,6 +504,25 @@ const FindingEntryForm = ({
               </button>
             )}
           </div>
+          
+          {/* Delete option (only for edit mode) */}
+          {isEditMode && onDelete && (
+            <div className="mt-8 p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="flex items-center text-red-600 mb-2">
+                <Trash2 size={18} className="mr-2" />
+                <h3 className="font-medium">Delete Finding</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">
+                This will permanently remove this finding from the inspection.
+              </p>
+              <button 
+                className="modern-btn modern-btn--danger"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Delete Finding
+              </button>
+            </div>
+          )}
         </div>
       </div>
       
@@ -448,18 +530,27 @@ const FindingEntryForm = ({
         <div className="modern-bottom-bar__content">
           <button 
             className="modern-btn modern-btn--secondary"
-            onClick={handleBack}
+            onClick={isEditMode ? onCancel : handleBackStep}
           >
-            Back
+            {isEditMode ? 'Cancel' : 'Back'}
           </button>
           
           <button 
             className="modern-btn modern-btn--primary"
-            onClick={handleSubmit}
-            disabled={!finding.deficiency.trim()}
+            onClick={handleSave}
+            disabled={loading || !deficiency.trim() || (!isEditMode && (!category || !subcategory))}
           >
-            <Save size={18} className="mr-2" />
-            Save Finding
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save size={18} className="mr-2" />
+                {isEditMode ? 'Save Changes' : 'Save Finding'}
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -471,8 +562,38 @@ const FindingEntryForm = ({
           onClose={() => setShowPhotoCapture(false)}
         />
       )}
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="delete-confirm-modal">
+          <div className="delete-confirm-modal__content">
+            <div className="delete-confirm-modal__header">
+              <h3 className="delete-confirm-modal__title">Delete Finding?</h3>
+            </div>
+            <div className="delete-confirm-modal__body">
+              <p className="delete-confirm-modal__message">
+                Are you sure you want to delete this finding? This action cannot be undone.
+              </p>
+            </div>
+            <div className="delete-confirm-modal__footer">
+              <button 
+                className="delete-confirm-modal__delete"
+                onClick={handleDelete}
+              >
+                Delete Finding
+              </button>
+              <button 
+                className="delete-confirm-modal__cancel"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default FindingEntryForm;
+export default FindingForm;

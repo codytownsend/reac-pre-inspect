@@ -1,4 +1,4 @@
-// src/pages/inspections/FindingDetailPage.jsx
+// src/pages/inspections/FindingPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
@@ -6,7 +6,6 @@ import FindingPhotoCapture from '../../components/FindingPhotoCapture';
 import { 
   Camera, 
   X, 
-  Check, 
   AlertCircle, 
   AlertTriangle, 
   Clock,
@@ -15,11 +14,12 @@ import {
   Trash2,
   Edit,
   ArrowLeft,
+  Plus,
   ExternalLink
 } from 'lucide-react';
 
-const FindingDetailPage = () => {
-  const { id, areaId, findingId, areaType = 'unit' } = useParams();
+const FindingPage = () => {
+  const { id, areaId, findingId } = useParams();
   const navigate = useNavigate();
   const { getInspection, updateInspection } = useInspection();
   
@@ -39,6 +39,9 @@ const FindingDetailPage = () => {
   const [notes, setNotes] = useState('');
   const [repairStatus, setRepairStatus] = useState('');
   const [photos, setPhotos] = useState([]);
+  
+  // Determine area type based on area.areaType
+  const [areaType, setAreaType] = useState('unit');
   
   useEffect(() => {
     const loadData = async () => {
@@ -60,6 +63,7 @@ const FindingDetailPage = () => {
         }
         
         setArea(areaData);
+        setAreaType(areaData.areaType || 'unit');
         
         // Find finding in area
         const findingData = areaData.findings?.find(f => f.id === findingId);
@@ -165,7 +169,7 @@ const FindingDetailPage = () => {
       await updateInspection(id, { areas: updatedAreas });
       
       // Navigate back to area detail
-      navigate(`/inspections/${id}/${areaType}/${areaId}`);
+      navigate(`/inspections/${id}/areas/${areaType}/${areaId}`);
       
     } catch (error) {
       console.error("Error deleting finding:", error);
@@ -284,7 +288,7 @@ const FindingDetailPage = () => {
         <div className="flex items-center">
           <button
             className="app-bar__back-button"
-            onClick={() => navigate(`/inspections/${id}/${areaType}/${areaId}`)}
+            onClick={() => navigate(`/inspections/${id}/areas/${areaType}/${areaId}`)}
           >
             <ArrowLeft size={20} />
           </button>
@@ -482,25 +486,29 @@ const FindingDetailPage = () => {
               </div>
               
               <div className="finding-details__photo-grid">
-                {photos.map((photo, index) => (
-                  <div 
-                    key={index} 
-                    className="finding-details__photo"
-                  >
-                    <img 
-                      src={photo.data} 
-                      alt={`Finding ${index + 1}`}
-                    />
-                    {editMode && (
-                      <button
-                        className="finding-details__photo-remove"
-                        onClick={() => handleRemovePhoto(photo.id)}
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {photos.length > 0 ? (
+                  photos.map((photo, index) => (
+                    <div 
+                      key={index} 
+                      className="finding-details__photo"
+                    >
+                      <img 
+                        src={photo.data} 
+                        alt={`Finding ${index + 1}`}
+                      />
+                      {editMode && (
+                        <button
+                          className="finding-details__photo-remove"
+                          onClick={() => handleRemovePhoto(photo.id)}
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center">No photos added</p>
+                )}
                 
                 {editMode && (
                   <button
@@ -566,7 +574,7 @@ const FindingDetailPage = () => {
         <div className="modern-bottom-bar__content">
           <button 
             className="modern-btn modern-btn--secondary"
-            onClick={() => navigate(`/inspections/${id}/${areaType}/${areaId}`)}
+            onClick={() => navigate(`/inspections/${id}/areas/${areaType}/${areaId}`)}
           >
             <ArrowLeft size={16} className="mr-1" /> Back
           </button>
@@ -640,4 +648,4 @@ const FindingDetailPage = () => {
   );
 };
 
-export default FindingDetailPage;
+export default FindingPage;
