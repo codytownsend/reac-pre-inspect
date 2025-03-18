@@ -1,10 +1,19 @@
-// src/components/FindingEntryForm.jsx
 import React, { useState, useEffect } from 'react';
 import { useInspection } from '../context/InspectionContext';
-import Button from './Button';
-import Alert from './Alert';
 import FindingPhotoCapture from './FindingPhotoCapture';
-import { Camera, Plus, AlertCircle, Clock, AlertTriangle, Save } from 'lucide-react';
+import { 
+  Camera, 
+  Plus, 
+  AlertCircle, 
+  Clock, 
+  AlertTriangle, 
+  Save,
+  CheckCircle,
+  ChevronRight,
+  X,
+  ArrowLeft,
+  ArrowRight
+} from 'lucide-react';
 
 const FindingEntryForm = ({ 
   inspectionId, 
@@ -14,6 +23,7 @@ const FindingEntryForm = ({
   onCancel 
 }) => {
   const { nspireCategories } = useInspection();
+  const [step, setStep] = useState(1); // 1: Category, 2: Subcategory, 3: Details
   const [finding, setFinding] = useState({
     category: '',
     subcategory: '',
@@ -22,26 +32,14 @@ const FindingEntryForm = ({
     notes: '',
     photos: []
   });
-  const [selectedCategory, setSelectedCategory] = useState('');
+  
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState(1); // 1: Category, 2: Details
-
-  // When category changes, reset subcategory
-  useEffect(() => {
-    if (selectedCategory) {
-      setFinding(prev => ({
-        ...prev,
-        category: selectedCategory,
-        subcategory: ''
-      }));
-    }
-  }, [selectedCategory]);
-
+  
   // Filter categories based on area type
   const getFilteredCategories = () => {
     if (areaType === 'unit') {
-      return ['unit', 'bathroom', 'kitchen', 'electrical'];
+      return ['unit', 'bathroom', 'kitchen', 'electrical', 'fire_life_safety'];
     } else if (areaType === 'inside') {
       return ['buildingSystems', 'commonAreas', 'electrical', 'fire_life_safety'];
     } else if (areaType === 'outside') {
@@ -51,7 +49,24 @@ const FindingEntryForm = ({
   };
 
   const filteredCategories = getFilteredCategories();
-
+  
+  const handleCategorySelect = (category) => {
+    setFinding(prev => ({
+      ...prev,
+      category,
+      subcategory: ''
+    }));
+    setStep(2);
+  };
+  
+  const handleSubcategorySelect = (subcategory) => {
+    setFinding(prev => ({
+      ...prev,
+      subcategory
+    }));
+    setStep(3);
+  };
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFinding(prev => ({
@@ -93,157 +108,267 @@ const FindingEntryForm = ({
     // Call onSave callback
     onSave(newFinding);
   };
-
-  // Render severity badge
-  const renderSeverityBadge = (severity) => {
-    switch (severity) {
-      case 'lifeThreatening':
-        return (
-          <div className="flex items-center bg-red-100 text-red-700 px-2 py-1 rounded">
-            <AlertCircle size={16} className="mr-1" />
-            <span className="text-xs">Life-Threatening</span>
-          </div>
-        );
-      case 'severe':
-        return (
-          <div className="flex items-center bg-orange-100 text-orange-700 px-2 py-1 rounded">
-            <AlertTriangle size={16} className="mr-1" />
-            <span className="text-xs">Severe</span>
-          </div>
-        );
-      case 'moderate':
-        return (
-          <div className="flex items-center bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-            <Clock size={16} className="mr-1" />
-            <span className="text-xs">Moderate</span>
-          </div>
-        );
-      case 'low':
-        return (
-          <div className="flex items-center bg-blue-100 text-blue-700 px-2 py-1 rounded">
-            <Clock size={16} className="mr-1" />
-            <span className="text-xs">Low</span>
-          </div>
-        );
-      default:
-        return null;
+  
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    } else {
+      onCancel();
     }
   };
-
-  // Step 1: Category Selection
+  
+  // Get severity details
+  const getSeverityDetails = (severity) => {
+    switch (severity) {
+      case 'lifeThreatening':
+        return {
+          icon: <AlertCircle size={20} />,
+          name: 'Life Threatening',
+          color: 'bg-red-500',
+          text: 'text-red-500',
+          border: 'border-red-500',
+          bg: 'bg-red-50',
+          timeframe: '24 Hours',
+        };
+      case 'severe':
+        return {
+          icon: <AlertTriangle size={20} />,
+          name: 'Severe',
+          color: 'bg-orange-500',
+          text: 'text-orange-500',
+          border: 'border-orange-500',
+          bg: 'bg-orange-50',
+          timeframe: areaType === 'unit' ? '30 Days' : '24 Hours',
+        };
+      case 'moderate':
+        return {
+          icon: <Clock size={20} />,
+          name: 'Moderate',
+          color: 'bg-yellow-500',
+          text: 'text-yellow-500',
+          border: 'border-yellow-500',
+          bg: 'bg-yellow-50',
+          timeframe: '30 Days',
+        };
+      case 'low':
+        return {
+          icon: <CheckCircle size={20} />,
+          name: 'Low',
+          color: 'bg-blue-500',
+          text: 'text-blue-500',
+          border: 'border-blue-500',
+          bg: 'bg-blue-50',
+          timeframe: '60 Days',
+        };
+      default:
+        return {
+          icon: <Clock size={20} />,
+          name: 'Moderate',
+          color: 'bg-yellow-500',
+          text: 'text-yellow-500',
+          border: 'border-yellow-500',
+          bg: 'bg-yellow-50',
+          timeframe: '30 Days',
+        };
+    }
+  };
+  
+  // Get current severity details
+  const severityDetails = getSeverityDetails(finding.severity);
+  
+  // Category Selection View (Step 1)
   if (step === 1) {
     return (
-      <div className="p-4">
-        <h2 className="text-lg font-bold mb-4">Select Category</h2>
-        
-        {error && <Alert type="danger" message={error} />}
-        
-        <div className="space-y-3 mb-6">
-          {filteredCategories.map(categoryKey => {
-            const category = nspireCategories[categoryKey];
-            if (!category) return null;
-            
-            return (
-              <button
-                key={categoryKey}
-                className={`w-full p-3 border rounded text-left ${
-                  selectedCategory === categoryKey
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300'
-                }`}
-                onClick={() => setSelectedCategory(categoryKey)}
-              >
-                {category.name}
-              </button>
-            );
-          })}
+      <div className="h-full flex flex-col">
+        <div className="p-4 bg-white sticky top-0 z-10 border-b">
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">1</div>
+            <h2 className="text-xl font-bold">Select Category</h2>
+          </div>
+          <div className="flex mt-2">
+            <div className="h-1 bg-blue-500 rounded-full flex-1"></div>
+            <div className="h-1 bg-gray-300 rounded-full flex-1 ml-1"></div>
+            <div className="h-1 bg-gray-300 rounded-full flex-1 ml-1"></div>
+          </div>
         </div>
         
-        <div className="flex justify-between mt-6">
-          <Button variant="secondary" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={() => setStep(2)}
-            disabled={!selectedCategory}
+        {error && (
+          <div className="mx-4 mt-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center">
+            <AlertCircle size={20} className="mr-2" />
+            {error}
+          </div>
+        )}
+        
+        <div className="flex-1 overflow-auto p-4">
+          <div className="grid gap-3">
+            {filteredCategories.map(categoryKey => {
+              const category = nspireCategories[categoryKey];
+              if (!category) return null;
+              
+              return (
+                <button
+                  key={categoryKey}
+                  className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center"
+                  onClick={() => handleCategorySelect(categoryKey)}
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-left">{category.name}</div>
+                    <div className="text-sm text-gray-500 text-left">{category.subcategories.length} subcategories</div>
+                  </div>
+                  <ChevronRight size={20} className="text-gray-400" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        
+        <div className="p-4 bg-white border-t sticky bottom-0">
+          <button 
+            className="w-full p-3 bg-gray-100 rounded-lg flex items-center justify-center font-medium"
+            onClick={onCancel}
           >
-            Next
-          </Button>
+            Cancel
+          </button>
         </div>
       </div>
     );
   }
   
-  // Step 2: Finding Details
-  return (
-    <div className="p-4">
-      <h2 className="text-lg font-bold mb-4">
-        {nspireCategories[finding.category]?.name} Finding
-      </h2>
-      
-      {error && <Alert type="danger" message={error} />}
-      
-      <div className="space-y-4">
-        {/* Subcategory Dropdown */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Subcategory
-          </label>
-          <select
-            name="subcategory"
-            value={finding.subcategory}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          >
-            <option value="">-- Select subcategory --</option>
-            {nspireCategories[finding.category]?.subcategories.map(sub => (
-              <option key={sub} value={sub}>{sub}</option>
-            ))}
-          </select>
+  // Subcategory Selection View (Step 2)
+  if (step === 2) {
+    const category = nspireCategories[finding.category];
+    
+    return (
+      <div className="h-full flex flex-col">
+        <div className="p-4 bg-white sticky top-0 z-10 border-b">
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">2</div>
+            <h2 className="text-xl font-bold">Select Subcategory</h2>
+          </div>
+          <div className="flex mt-2">
+            <div className="h-1 bg-blue-500 rounded-full flex-1"></div>
+            <div className="h-1 bg-blue-500 rounded-full flex-1 ml-1"></div>
+            <div className="h-1 bg-gray-300 rounded-full flex-1 ml-1"></div>
+          </div>
+          <div className="mt-2 px-3 py-2 bg-gray-100 rounded-lg text-sm">
+            Selected: <span className="font-medium">{category?.name}</span>
+          </div>
         </div>
         
+        {error && (
+          <div className="mx-4 mt-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center">
+            <AlertCircle size={20} className="mr-2" />
+            {error}
+          </div>
+        )}
+        
+        <div className="flex-1 overflow-auto p-4">
+          <div className="grid gap-3">
+            {category?.subcategories.map(subcategory => (
+              <button
+                key={subcategory}
+                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center"
+                onClick={() => handleSubcategorySelect(subcategory)}
+              >
+                <div className="font-medium text-left flex-1">{subcategory}</div>
+                <ChevronRight size={20} className="text-gray-400" />
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div className="p-4 bg-white border-t sticky bottom-0 flex gap-3">
+          <button 
+            className="flex-1 p-3 bg-gray-100 rounded-lg flex items-center justify-center font-medium"
+            onClick={handleBack}
+          >
+            <ArrowLeft size={18} className="mr-2" />
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Finding Details View (Step 3)
+  return (
+    <div className="h-full flex flex-col">
+      <div className="p-4 bg-white sticky top-0 z-10 border-b">
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">3</div>
+          <h2 className="text-xl font-bold">Finding Details</h2>
+        </div>
+        <div className="flex mt-2">
+          <div className="h-1 bg-blue-500 rounded-full flex-1"></div>
+          <div className="h-1 bg-blue-500 rounded-full flex-1 ml-1"></div>
+          <div className="h-1 bg-blue-500 rounded-full flex-1 ml-1"></div>
+        </div>
+        <div className="mt-2 px-3 py-2 bg-gray-100 rounded-lg text-sm">
+          <span className="font-medium">{nspireCategories[finding.category]?.name}: {finding.subcategory}</span>
+        </div>
+      </div>
+      
+      {error && (
+        <div className="mx-4 mt-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center">
+          <AlertCircle size={20} className="mr-2" />
+          {error}
+        </div>
+      )}
+      
+      <div className="flex-1 overflow-auto p-4">
         {/* Deficiency Description */}
-        <div>
+        <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Deficiency Description
+            Deficiency Description *
           </label>
           <textarea
             name="deficiency"
             value={finding.deficiency}
             onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
             rows="3"
-            placeholder="Describe the issue in detail..."
+            placeholder="Describe what's wrong..."
             required
           />
         </div>
         
         {/* Severity Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Severity
           </label>
-          <select
-            name="severity"
-            value={finding.severity}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          >
-            <option value="lifeThreatening">Life-Threatening</option>
-            <option value="severe">Severe</option>
-            <option value="moderate">Moderate</option>
-            <option value="low">Low</option>
-          </select>
           
-          <div className="mt-2">
-            {renderSeverityBadge(finding.severity)}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            {['lifeThreatening', 'severe', 'moderate', 'low'].map(severity => {
+              const details = getSeverityDetails(severity);
+              return (
+                <button
+                  key={severity}
+                  type="button"
+                  className={`p-3 rounded-lg border ${
+                    finding.severity === severity 
+                      ? `${details.border} ${details.bg}` 
+                      : 'border-gray-200'
+                  } flex flex-col items-center justify-center`}
+                  onClick={() => setFinding(prev => ({ ...prev, severity }))}
+                >
+                  <div className={`${finding.severity === severity ? details.text : 'text-gray-400'}`}>
+                    {details.icon}
+                  </div>
+                  <div className="text-sm font-medium mt-1">{details.name}</div>
+                </button>
+              );
+            })}
+          </div>
+          
+          <div className={`p-3 rounded-lg ${severityDetails.bg} ${severityDetails.text} flex items-center text-sm`}>
+            <Clock size={16} className="mr-2" />
+            Required repair timeframe: <span className="font-bold ml-1">{severityDetails.timeframe}</span>
           </div>
         </div>
         
         {/* Notes */}
-        <div>
+        <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Notes (Optional)
           </label>
@@ -251,33 +376,32 @@ const FindingEntryForm = ({
             name="notes"
             value={finding.notes}
             onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
             rows="2"
             placeholder="Add any additional notes..."
           />
         </div>
         
         {/* Photos */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Photos
-          </label>
-          
-          <div className="mb-3">
-            <Button 
-              variant="secondary" 
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-medium text-gray-700">Photos</label>
+            <button
+              type="button"
+              className="text-blue-500 text-sm font-medium flex items-center"
               onClick={() => setShowPhotoCapture(true)}
             >
-              <Camera size={16} className="mr-2" /> Capture Photo
-            </Button>
+              <Camera size={16} className="mr-1" /> 
+              Add Photo
+            </button>
           </div>
           
-          {finding.photos.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+          {finding.photos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-3">
               {finding.photos.map((photo, index) => (
                 <div 
                   key={index} 
-                  className="relative w-20 h-20 border rounded overflow-hidden"
+                  className="aspect-square relative rounded-lg overflow-hidden border border-gray-200"
                 >
                   <img 
                     src={photo.data} 
@@ -285,34 +409,59 @@ const FindingEntryForm = ({
                     className="w-full h-full object-cover"
                   />
                   <button
-                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                    type="button"
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
                     onClick={() => removePhoto(index)}
                   >
-                    <X size={10} />
+                    <X size={14} />
                   </button>
                 </div>
               ))}
+              
+              <button
+                type="button"
+                className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400"
+                onClick={() => setShowPhotoCapture(true)}
+              >
+                <Plus size={24} />
+                <span className="text-xs mt-1">Add</span>
+              </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400"
+              onClick={() => setShowPhotoCapture(true)}
+            >
+              <Camera size={32} />
+              <span className="mt-2">Tap to add photo evidence</span>
+            </button>
           )}
         </div>
       </div>
       
-      {/* Action Buttons */}
-      <div className="flex justify-between mt-6">
-        <Button variant="secondary" onClick={() => setStep(1)}>
-          Back
-        </Button>
-        <Button 
-          variant="primary" 
-          onClick={handleSubmit}
+      <div className="p-4 bg-white border-t sticky bottom-0 flex gap-3">
+        <button 
+          className="p-3 bg-gray-100 rounded-lg flex items-center justify-center font-medium"
+          onClick={handleBack}
         >
-          <Save size={16} className="mr-2" /> Save Finding
-        </Button>
+          <ArrowLeft size={18} className="mr-2" />
+          Back
+        </button>
+        
+        <button 
+          className="flex-1 p-3 bg-blue-500 text-white rounded-lg flex items-center justify-center font-medium disabled:opacity-50"
+          onClick={handleSubmit}
+          disabled={!finding.deficiency.trim()}
+        >
+          <Save size={18} className="mr-2" />
+          Save Finding
+        </button>
       </div>
       
       {/* Photo Capture Modal */}
       {showPhotoCapture && (
-        <FindingPhotoCapture 
+        <FindingPhotoCapture
           onPhotoCapture={handlePhotoCapture}
           onClose={() => setShowPhotoCapture(false)}
         />

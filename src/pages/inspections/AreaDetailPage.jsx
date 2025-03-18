@@ -2,11 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
-import Header from '../../components/Header';
-import Card from '../../components/Card';
-import Button from '../../components/Button';
-import Alert from '../../components/Alert';
-import Loading from '../../components/Loading';
 import FindingEntryForm from '../../components/FindingEntryForm';
 import { 
   Plus, 
@@ -18,7 +13,11 @@ import {
   Trash2,
   Home,
   Building,
-  Grid
+  Grid,
+  ArrowLeft,
+  MoreVertical,
+  ChevronRight,
+  X
 } from 'lucide-react';
 
 const AreaDetailPage = () => {
@@ -31,6 +30,9 @@ const AreaDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddFinding, setShowAddFinding] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [currentFinding, setCurrentFinding] = useState(null);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
   
   useEffect(() => {
     const loadData = async () => {
@@ -89,10 +91,6 @@ const AreaDetailPage = () => {
   };
   
   const handleDeleteFinding = async (findingId) => {
-    if (!window.confirm('Are you sure you want to delete this finding?')) {
-      return;
-    }
-    
     try {
       // Remove finding from area
       const updatedArea = {
@@ -110,20 +108,46 @@ const AreaDetailPage = () => {
       
       // Update local state
       setArea(updatedArea);
+      setShowDeleteModal(false);
+      setCurrentFinding(null);
     } catch (error) {
       console.error("Error deleting finding:", error);
       setError('Error deleting finding');
     }
   };
   
+  const handleDeleteArea = async () => {
+    if (window.confirm("Are you sure you want to delete this area and all its findings?")) {
+      try {
+        // Remove area from inspection
+        const updatedAreas = inspection.areas.filter(a => a.id !== areaId);
+        
+        // Update inspection in Firebase
+        await updateInspection(id, { areas: updatedAreas });
+        
+        // Navigate back to the appropriate area type page
+        if (area.areaType === 'unit') {
+          navigate(`/inspections/${id}/areas/units`);
+        } else if (area.areaType === 'inside') {
+          navigate(`/inspections/${id}/areas/inside`);
+        } else {
+          navigate(`/inspections/${id}/areas/outside`);
+        }
+      } catch (error) {
+        console.error("Error deleting area:", error);
+        setError('Error deleting area');
+      }
+    }
+  };
+  
   const getAreaIcon = () => {
     switch (area?.areaType) {
       case 'unit':
-        return <Home size={20} />;
+        return <Home size={20} className="text-blue-500" />;
       case 'inside':
-        return <Building size={20} />;
+        return <Building size={20} className="text-purple-500" />;
       case 'outside':
-        return <Grid size={20} />;
+        return <Grid size={20} className="text-green-500" />;
       default:
         return null;
     }
@@ -171,16 +195,34 @@ const AreaDetailPage = () => {
   };
   
   if (loading) {
-    return <Loading message="Loading area details..." />;
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading area details...</p>
+        </div>
+      </div>
+    );
   }
   
   if (!area) {
     return (
-      <div className="container">
-        <Alert type="danger" message={error || "Area not found"} />
-        <Button variant="primary" onClick={() => navigate(`/inspections/${id}`)}>
-          Back to Inspection
-        </Button>
+      <div className="h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
+        <div className="bg-white p-6 rounded-xl shadow-sm max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={32} className="text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Area Not Found</h2>
+          <p className="text-gray-600 mb-6">
+            {error || "The area you're looking for doesn't exist or has been removed."}
+          </p>
+          <button 
+            className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium"
+            onClick={() => navigate(`/inspections/${id}`)}
+          >
+            Back to Inspection
+          </button>
+        </div>
       </div>
     );
   }
@@ -188,140 +230,212 @@ const AreaDetailPage = () => {
   // If showing add finding form
   if (showAddFinding) {
     return (
-      <div className="container">
-        <Header 
-          title="Add Finding" 
-          showBack={true}
-          onBackClick={() => setShowAddFinding(false)}
-        />
+      <div className="h-screen flex flex-col bg-gray-50">
+        <div className="bg-white p-4 flex items-center border-b">
+          <button
+            className="p-2 rounded-full hover:bg-gray-100"
+            onClick={() => setShowAddFinding(false)}
+          >
+            <X size={24} />
+          </button>
+          <h1 className="text-xl font-bold ml-2">Add Finding</h1>
+        </div>
         
-        <FindingEntryForm 
-          inspectionId={id}
-          areaId={areaId}
-          areaType={area.areaType}
-          onSave={handleSaveFinding}
-          onCancel={() => setShowAddFinding(false)}
-        />
+        <div className="flex-1 overflow-hidden">
+          <FindingEntryForm 
+            inspectionId={id}
+            areaId={areaId}
+            areaType={area.areaType}
+            onSave={handleSaveFinding}
+            onCancel={() => setShowAddFinding(false)}
+          />
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="container pb-16">
-      <Header 
-        title={area.name}
-        showBack={true}
-      />
-      
-      {error && <Alert type="danger" message={error} />}
-      
-      {/* Area Info Card */}
-      <Card className="mb-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Top App Bar */}
+      <div className="bg-white p-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
         <div className="flex items-center">
-          <div className="bg-gray-100 p-3 rounded-full mr-3">
-            {getAreaIcon()}
-          </div>
-          <div>
-            <h2 className="font-bold">{area.name}</h2>
-            <p className="text-gray-500">{area.areaType}</p>
-          </div>
+          <button
+            className="p-2 rounded-full hover:bg-gray-100 mr-2"
+            onClick={() => navigate(getBackUrl())}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-xl font-bold">{area.name}</h1>
         </div>
-      </Card>
-      
-      {/* Findings Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold">
-          Findings ({area.findings?.length || 0})
-        </h2>
-        <Button 
-          variant="primary"
-          onClick={() => setShowAddFinding(true)}
-        >
-          <Plus size={16} className="mr-1" /> Add Finding
-        </Button>
+        
+        <div className="relative">
+          <button
+            className="p-2 rounded-full hover:bg-gray-100"
+            onClick={() => setShowActionsMenu(!showActionsMenu)}
+          >
+            <MoreVertical size={20} />
+          </button>
+          
+          {/* Actions Menu */}
+          {showActionsMenu && (
+            <div className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg overflow-hidden w-48 z-20">
+              <button
+                className="w-full px-4 py-3 text-left text-red-600 hover:bg-gray-100 flex items-center"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  handleDeleteArea();
+                }}
+              >
+                <Trash2 size={16} className="mr-2" />
+                Delete Area
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       
-      {/* Findings List */}
-      {!area.findings || area.findings.length === 0 ? (
-        <Card className="p-4 text-center">
-          <p className="text-gray-500 mb-4">No findings have been added yet.</p>
-          <Button 
-            variant="primary"
-            onClick={() => setShowAddFinding(true)}
-          >
-            <Plus size={16} className="mr-1" /> Add First Finding
-          </Button>
-        </Card>
-      ) : (
-        <div className="space-y-4 mb-4">
-          {area.findings.map((finding) => (
-            <Card 
-              key={finding.id} 
-              className={`p-4 border-l-4 ${getSeverityClass(finding.severity)}`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold">{finding.subcategory}</h3>
-                <div className="flex items-center">
-                  {getSeverityIcon(finding.severity)}
-                </div>
-              </div>
-              
-              <p className="mb-3">{finding.deficiency}</p>
-              
-              {finding.notes && (
-                <p className="text-sm text-gray-500 mb-3">{finding.notes}</p>
-              )}
-              
-              {/* Photos thumbnails */}
-              {finding.photos && finding.photos.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {finding.photos.map((photo, index) => (
-                    <div 
-                      key={index} 
-                      className="w-16 h-16 border rounded overflow-hidden"
-                    >
-                      <img 
-                        src={photo.data} 
-                        alt={`Photo ${index+1}`} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              <div className="flex justify-end">
-                <Button
-                  variant="danger"
-                  className="p-2"
-                  onClick={() => handleDeleteFinding(finding.id)}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            </Card>
-          ))}
+      {error && (
+        <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
+          <AlertCircle size={20} className="mr-2" />
+          {error}
         </div>
       )}
       
-      {/* Action Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 py-3 px-4 bg-white border-t">
-        <div className="container flex justify-between">
-          <Button 
-            variant="secondary" 
-            onClick={() => navigate(getBackUrl())}
-          >
-            Back
-          </Button>
-          
-          <Button 
-            variant="primary" 
-            onClick={() => setShowAddFinding(true)}
-          >
-            <Plus size={16} className="mr-1" /> Add Finding
-          </Button>
+      {/* Area Info Card */}
+      <div className="p-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="flex items-center">
+            <div className={`p-3 rounded-full ${
+              area.areaType === 'unit' ? 'bg-blue-100' : 
+              area.areaType === 'inside' ? 'bg-purple-100' : 'bg-green-100'
+            } mr-4`}>
+              {getAreaIcon()}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">{area.name}</h2>
+              <p className="text-gray-600">
+                {area.findings?.length || 0} finding{area.findings?.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
+      
+      {/* Findings List */}
+      <div className="flex-1 p-4">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold">Findings</h2>
+        </div>
+        
+        {!area.findings || area.findings.length === 0 ? (
+          <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus size={24} className="text-gray-400" />
+            </div>
+            <p className="text-gray-600 mb-6">No findings have been added yet.</p>
+            <button 
+              className="py-3 px-4 bg-blue-500 text-white rounded-lg font-medium flex items-center justify-center mx-auto"
+              onClick={() => setShowAddFinding(true)}
+            >
+              <Plus size={18} className="mr-2" /> Add First Finding
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3 mb-24">
+            {area.findings.map((finding) => (
+              <div 
+                key={finding.id} 
+                className={`bg-white p-4 rounded-xl shadow-sm border-l-4 ${getSeverityClass(finding.severity)}`}
+              >
+                <div className="flex items-start">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center mb-2">
+                      {getSeverityIcon(finding.severity)}
+                      <h3 className="font-bold ml-2 truncate">{finding.subcategory}</h3>
+                    </div>
+                    <p className="text-gray-700 mb-2">{finding.deficiency}</p>
+                    
+                    {finding.notes && (
+                      <p className="text-gray-500 text-sm mb-2">{finding.notes}</p>
+                    )}
+                    
+                    {finding.photos && finding.photos.length > 0 && (
+                      <div className="flex -mx-1 overflow-x-auto py-2">
+                        {finding.photos.map((photo, photoIndex) => (
+                          <div 
+                            key={photoIndex} 
+                            className="px-1 shrink-0"
+                          >
+                            <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
+                              <img 
+                                src={photo.data} 
+                                alt={`Finding ${photoIndex+1}`} 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="ml-3 flex flex-col">
+                    <button
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-full"
+                      onClick={() => {
+                        setCurrentFinding(finding);
+                        setShowDeleteModal(true);
+                      }}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {/* Floating Action Button */}
+      <div className="fixed right-4 bottom-20">
+        <button 
+          className="w-14 h-14 bg-blue-500 rounded-full text-white shadow-lg flex items-center justify-center"
+          onClick={() => setShowAddFinding(true)}
+          aria-label="Add Finding"
+        >
+          <Plus size={24} />
+        </button>
+      </div>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && currentFinding && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-2">Delete Finding?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this finding? This action cannot be undone.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button 
+                className="w-full py-3 bg-red-500 text-white rounded-lg font-medium"
+                onClick={() => handleDeleteFinding(currentFinding.id)}
+              >
+                Delete Finding
+              </button>
+              <button 
+                className="w-full py-3 bg-gray-100 rounded-lg font-medium"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setCurrentFinding(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

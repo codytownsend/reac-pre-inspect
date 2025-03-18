@@ -1,18 +1,25 @@
-// src/components/FindingPhotoCapture.jsx
-import React, { useState, useRef } from 'react';
-import { Camera, X, Check, Image } from 'lucide-react';
-import Button from './Button';
+import React, { useState, useRef, useEffect } from 'react';
+import { Camera, X, Check, Image, RefreshCw, Loader } from 'lucide-react';
 
 const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [error, setError] = useState('');
   const [stream, setStream] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [cameraPermission, setCameraPermission] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
-  
+
+  // Start camera when component mounts
+  useEffect(() => {
+    startCamera();
+    return () => stopCamera();
+  }, []);
+
   // Start camera
   const startCamera = async () => {
+    setLoading(true);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
@@ -23,6 +30,7 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
       });
       
       setStream(mediaStream);
+      setCameraPermission(true);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -31,6 +39,8 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
       setError('');
     } catch (err) {
       console.error("Camera error:", err);
+      setCameraPermission(false);
+      
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setError('Camera access denied. Please allow camera access in your browser settings.');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
@@ -38,6 +48,8 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
       } else {
         setError('Could not access camera: ' + err.message);
       }
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -68,7 +80,7 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     setCapturedImage(imageData);
     
-    // Stop camera
+    // Stop camera to save battery
     stopCamera();
   };
   
@@ -96,29 +108,22 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
     };
     reader.readAsDataURL(file);
   };
-  
-  // Component did mount
-  React.useEffect(() => {
-    startCamera();
-    
-    // Cleanup on unmount
-    return () => {
-      stopCamera();
-    };
-  }, []);
-  
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex flex-col">
-      <div className="bg-white p-4 flex justify-between items-center">
-        <h2 className="text-lg font-bold">Capture Photo</h2>
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      {/* Header */}
+      <div className="bg-black bg-opacity-75 p-4 flex justify-between items-center">
+        <h2 className="text-white text-lg font-medium">Capture Photo</h2>
         <button 
-          className="p-2 rounded-full hover:bg-gray-100"
+          className="text-white p-2 rounded-full hover:bg-gray-800"
           onClick={onClose}
+          aria-label="Close"
         >
           <X size={24} />
         </button>
       </div>
       
+      {/* Main content */}
       <div className="flex-1 flex flex-col bg-black relative">
         {capturedImage ? (
           // Show captured image
@@ -126,22 +131,39 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
             <img 
               src={capturedImage} 
               alt="Captured" 
-              className="max-h-full max-w-full"
+              className="max-h-full max-w-full object-contain"
             />
           </div>
         ) : (
           // Show camera view or error
-          <>
-            {error ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-white">
-                <div className="text-red-500 mb-4">{error}</div>
-                <p className="mb-4">You can upload an image from your device instead:</p>
-                <Button 
-                  variant="secondary" 
+          <div className="flex-1 flex flex-col items-center justify-center">
+            {loading ? (
+              // Loading state
+              <div className="text-white flex flex-col items-center">
+                <Loader size={48} className="animate-spin mb-4" />
+                <p>Accessing camera...</p>
+              </div>
+            ) : error ? (
+              // Error state
+              <div className="text-white p-6 flex flex-col items-center text-center">
+                <div className="bg-red-500 rounded-full p-4 mb-4">
+                  <X size={32} />
+                </div>
+                <p className="mb-6">{error}</p>
+                <button 
+                  className="bg-white text-black py-2 px-4 rounded-lg mb-4 flex items-center"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Image size={16} className="mr-2" /> Select Image
-                </Button>
+                  <Image size={20} className="mr-2" /> 
+                  Select from Gallery
+                </button>
+                <button 
+                  className="bg-blue-500 text-white py-2 px-4 rounded-lg flex items-center"
+                  onClick={startCamera}
+                >
+                  <RefreshCw size={20} className="mr-2" /> 
+                  Try Again
+                </button>
                 <input 
                   type="file" 
                   ref={fileInputRef}
@@ -151,48 +173,61 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
                 />
               </div>
             ) : (
+              // Camera view
               <video 
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
+                onCanPlay={() => setLoading(false)}
               />
             )}
-          </>
+          </div>
         )}
         
         <canvas ref={canvasRef} className="hidden" />
       </div>
       
-      <div className="bg-white p-4 flex justify-between">
+      {/* Footer controls */}
+      <div className="bg-black bg-opacity-75 p-4">
         {capturedImage ? (
-          <>
-            <Button variant="secondary" onClick={handleRetake}>
-              <X size={16} className="mr-2" /> Retake
-            </Button>
-            <Button variant="primary" onClick={handleSave}>
-              <Check size={16} className="mr-2" /> Use Photo
-            </Button>
-          </>
+          // Controls for captured image
+          <div className="flex justify-between">
+            <button 
+              className="bg-gray-700 text-white px-6 py-3 rounded-lg flex items-center"
+              onClick={handleRetake}
+            >
+              <RefreshCw size={20} className="mr-2" /> Retake
+            </button>
+            <button 
+              className="bg-green-500 text-white px-6 py-3 rounded-lg flex items-center"
+              onClick={handleSave}
+            >
+              <Check size={20} className="mr-2" /> Use Photo
+            </button>
+          </div>
+        ) : !error && !loading ? (
+          // Camera controls
+          <div className="flex justify-center">
+            <button 
+              className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-4 border-gray-300" 
+              onClick={capturePhoto}
+              aria-label="Take photo"
+            >
+              <div className="w-12 h-12 rounded-full bg-white"></div>
+            </button>
+          </div>
         ) : (
-          <>
-            <Button variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            {!error && (
-              <Button variant="primary" onClick={capturePhoto}>
-                <Camera size={16} className="mr-2" /> Capture
-              </Button>
-            )}
-            {error && (
-              <Button 
-                variant="secondary" 
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Image size={16} className="mr-2" /> Select Image
-              </Button>
-            )}
-          </>
+          // If there's an error or loading, show option to select from gallery
+          !loading && (
+            <button 
+              className="w-full bg-blue-500 text-white py-3 rounded-lg flex items-center justify-center"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Image size={20} className="mr-2" /> 
+              Select from Gallery
+            </button>
+          )
         )}
       </div>
     </div>
