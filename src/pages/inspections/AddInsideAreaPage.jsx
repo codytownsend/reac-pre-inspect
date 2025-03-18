@@ -11,7 +11,8 @@ import {
   Building, 
   Save, 
   DoorOpen,
-  Tool,
+  Droplet,
+  Wrench,
   Users,
   Coffee
 } from 'lucide-react';
@@ -114,10 +115,10 @@ const AddInsideAreaPage = () => {
   // Area type options
   const areaTypes = [
     { id: 'hallway', name: 'Hallway/Corridor', icon: <DoorOpen size={24} /> },
-    { id: 'laundry', name: 'Laundry Room', icon: <Tool size={24} /> },
+    { id: 'laundry', name: 'Laundry Room', icon: <Droplet size={24} /> },
     { id: 'community', name: 'Community Room', icon: <Users size={24} /> },
     { id: 'office', name: 'Office/Admin Area', icon: <Coffee size={24} /> },
-    { id: 'mechanical', name: 'Mechanical Room', icon: <Tool size={24} /> },
+    { id: 'mechanical', name: 'Mechanical Room', icon: <Wrench size={24} /> },
     { id: 'storage', name: 'Storage Area', icon: <Building size={24} /> },
     { id: 'stairwell', name: 'Stairwell', icon: <Building size={24} /> },
     { id: 'elevator', name: 'Elevator', icon: <Building size={24} /> },

@@ -19,10 +19,19 @@ import EditProperty from './pages/properties/EditProperty';
 import Inspections from './pages/inspections/Inspections';
 import NewInspection from './pages/inspections/NewInspection';
 import InspectionDetail from './pages/inspections/InspectionDetail';
-import CapturePhoto from './pages/inspections/CapturePhoto';
+import FindingPhotoCapture from './components/FindingPhotoCapture';
 import InspectionReport from './pages/inspections/InspectionReport';
 import SharedReport from './pages/shared/SharedReport';
 import Settings from './pages/settings/Settings';
+import InspectionMain from './pages/inspections/InspectionMain';
+import UnitAreaPage from './pages/inspections/UnitAreaPage';
+import InsideAreaPage from './pages/inspections/InsideAreaPage';
+import OutsideAreaPage from './pages/inspections/OutsideAreaPage';
+import AddUnitPage from './pages/inspections/AddUnitPage';
+import AddInsideAreaPage from './pages/inspections/AddInsideAreaPage';
+import AddOutsideAreaPage from './pages/inspections/AddOutsideAreaPage';
+import AreaDetailPage from './pages/inspections/AreaDetailPage';
+import NspireStandardsPage from './pages/inspections/NspireStandardsPage';
 import NotFound from './pages/NotFound';
 
 // Context
@@ -90,15 +99,9 @@ const AppContent = () => {
           </PrivateRoute>
         } />
         
-        <Route path="/inspections/:id" element={
+        <Route path="/inspections/:id/areas/:areaId/findings/:findingId/photo" element={
           <PrivateRoute>
-            <InspectionDetail />
-          </PrivateRoute>
-        } />
-        
-        <Route path="/inspections/:id/photo" element={
-          <PrivateRoute>
-            <CapturePhoto />
+            <FindingPhotoCapture />
           </PrivateRoute>
         } />
         
@@ -111,6 +114,76 @@ const AppContent = () => {
         <Route path="/settings" element={
           <PrivateRoute>
             <Settings />
+          </PrivateRoute>
+        } />
+
+        <Route path="/inspections/:id" element={
+          <PrivateRoute>
+            <InspectionMain />
+          </PrivateRoute>
+        } />
+
+        {/* Unit Areas */}
+        <Route path="/inspections/:id/areas/units" element={
+          <PrivateRoute>
+            <UnitAreaPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/inspections/:id/units/add" element={
+          <PrivateRoute>
+            <AddUnitPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/inspections/:id/units/:areaId" element={
+          <PrivateRoute>
+            <AreaDetailPage />
+          </PrivateRoute>
+        } />
+
+        {/* Inside Areas */}
+        <Route path="/inspections/:id/areas/inside" element={
+          <PrivateRoute>
+            <InsideAreaPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/inspections/:id/inside/add" element={
+          <PrivateRoute>
+            <AddInsideAreaPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/inspections/:id/inside/:areaId" element={
+          <PrivateRoute>
+            <AreaDetailPage />
+          </PrivateRoute>
+        } />
+
+        {/* Outside Areas */}
+        <Route path="/inspections/:id/areas/outside" element={
+          <PrivateRoute>
+            <OutsideAreaPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/inspections/:id/outside/add" element={
+          <PrivateRoute>
+            <AddOutsideAreaPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/inspections/:id/outside/:areaId" element={
+          <PrivateRoute>
+            <AreaDetailPage />
+          </PrivateRoute>
+        } />
+
+        {/* NSPIRE Standards Reference */}
+        <Route path="/inspections/:id/standards" element={
+          <PrivateRoute>
+            <NspireStandardsPage />
           </PrivateRoute>
         } />
         

@@ -2183,3 +2183,356 @@ h3 {
   background-color: #f8d7da;
   color: #721c24;
 }
+
+
+
+/* Add these to your existing CSS file */
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.inspection-area-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.inspection-area-card:hover {
+  transform: translateY(-2px);
+}
+
+.area-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.area-info {
+  flex: 1;
+}
+
+.area-info h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.area-info p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.area-chevron {
+  color: #ccc;
+}
+
+.score {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.inspection-cycle {
+  margin-left: 8px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.meta-item {
+  margin-bottom: 8px;
+}
+
+
+
+/* src/styles/modern-inspection.css */
+
+/* Base layout for inspection pages */
+.inspection-page {
+  padding: 0;
+  position: relative;
+  padding-bottom: 80px;
+  /* Space for FAB */
+  max-width: 100%;
+  background-color: #f9fafb;
+  min-height: 100vh;
+}
+
+/* Action bar styles */
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background-color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.area-count,
+.unit-count {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+/* Quick add section */
+.quick-add-section {
+  background-color: white;
+  margin-bottom: 12px;
+  padding: 16px;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.quick-add-header {
+  margin-bottom: 12px;
+}
+
+.quick-add-header h3 {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin: 0;
+}
+
+.quick-add-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.quick-add-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  border-radius: 8px;
+  background-color: #f3f4f6;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.quick-add-button:active {
+  transform: scale(0.95);
+  background-color: #e5e7eb;
+}
+
+.button-icon {
+  margin-bottom: 8px;
+}
+
+.quick-add-button span {
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+/* Card styles for units/areas */
+.areas-list,
+.units-list {
+  padding: 0 16px;
+}
+
+.area-card,
+.unit-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 12px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.area-card:active,
+.unit-card:active {
+  transform: scale(0.98);
+  background-color: #f9fafb;
+}
+
+.area-icon,
+.unit-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.area-info,
+.unit-info {
+  flex: 1;
+}
+
+.area-name,
+.unit-name {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 4px;
+  color: #111827;
+}
+
+.area-meta,
+.unit-meta {
+  display: flex;
+  align-items: center;
+}
+
+.finding-count {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.area-status,
+.unit-status {
+  display: flex;
+  align-items: center;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  margin-bottom: 16px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.empty-state p {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0 0 24px;
+}
+
+/* Floating Action Button */
+.fab-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+}
+
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* Custom colors */
+.text-blue-500 {
+  color: #3b82f6;
+}
+
+.text-purple-500 {
+  color: #8b5cf6;
+}
+
+.text-green-500 {
+  color: #10b981;
+}
+
+.text-red-500 {
+  color: #ef4444;
+}
+
+.text-orange-500 {
+  color: #f97316;
+}
+
+.text-yellow-500 {
+  color: #f59e0b;
+}
+
+.text-gray-300 {
+  color: #d1d5db;
+}
+
+.text-gray-400 {
+  color: #9ca3af;
+}
+
+.mr-1 {
+  margin-right: 0.25rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+/* Media queries for larger screens */
+@media (min-width: 640px) {
+  .quick-add-buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .areas-list,
+  .units-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .area-card,
+  .unit-card {
+    margin-bottom: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+
+  .areas-list,
+  .units-list {
+    
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

@@ -14,7 +14,7 @@ import {
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from './AuthContext';
-import { Finding, Inspection } from '../models/Finding'; // Import our new models
+import { Finding, Inspection } from '../models/findings'; // Import our new models
 import { calculateNspireScore } from '../utils/nspireScoring'; // Import scoring utility
 
 const InspectionContext = createContext();
@@ -111,23 +111,132 @@ export const InspectionProvider = ({ children }) => {
         'Walls',
         'Windows'
       ]
+    },
+    electrical: {
+      name: 'Electrical',
+      subcategories: [
+        'Outlets',
+        'Switches',
+        'Light Fixtures',
+        'Electrical Panels',
+        'GFCI Protection',
+        'Wiring'
+      ]
+    },
+    fire_life_safety: {
+      name: 'Fire & Life Safety',
+      subcategories: [
+        'Smoke Detectors',
+        'Carbon Monoxide Detectors',
+        'Fire Extinguishers',
+        'Emergency Exits',
+        'Fire Escapes',
+        'Sprinkler Systems',
+        'Fire Walls and Doors'
+      ]
     }
   };
 
   // NSPIRE deficiency severity mappings - simplified example
   const nspireDeficiencies = {
     // Fire and Life Safety
-    'smoke_detector_missing': { severity: 'lifeThreatening', hcvRating: 'fail' },
-    'co_detector_missing': { severity: 'lifeThreatening', hcvRating: 'fail' },
-    'blocked_egress': { severity: 'lifeThreatening', hcvRating: 'fail' },
+    'smoke_detector_missing': { 
+      category: 'fire_life_safety',
+      description: 'Smoke detector not installed where required',
+      severity: 'lifeThreatening', 
+      repairDue: 24,
+      hcvRating: 'fail' 
+    },
+    'co_detector_missing': { 
+      category: 'fire_life_safety',
+      description: 'Carbon monoxide detector missing',
+      severity: 'lifeThreatening', 
+      repairDue: 24,
+      hcvRating: 'fail' 
+    },
+    'blocked_egress': { 
+      category: 'fire_life_safety',
+      description: 'Obstructed means of egress',
+      severity: 'lifeThreatening', 
+      repairDue: 24,
+      hcvRating: 'fail' 
+    },
     
     // Mechanical
-    'inoperable_hvac_cold': { severity: 'lifeThreatening', hcvRating: 'fail' },
-    'inoperable_hvac_moderate': { severity: 'moderate', hcvRating: 'fail' },
-    'gas_leak': { severity: 'lifeThreatening', hcvRating: 'fail' },
-    'water_leak': { severity: 'moderate', hcvRating: 'fail' },
+    'inoperable_hvac_cold': { 
+      category: 'buildingSystems',
+      description: 'HVAC inoperable during cold weather',
+      severity: 'lifeThreatening', 
+      repairDue: 24,
+      hcvRating: 'fail' 
+    },
+    'inoperable_hvac_moderate': { 
+      category: 'buildingSystems',
+      description: 'HVAC inoperable during moderate weather',
+      severity: 'moderate', 
+      repairDue: 30,
+      hcvRating: 'fail' 
+    },
+    'gas_leak': { 
+      category: 'buildingSystems',
+      description: 'Gas leak detected',
+      severity: 'lifeThreatening', 
+      repairDue: 24,
+      hcvRating: 'fail' 
+    },
+    'water_leak': { 
+      category: 'buildingSystems',
+      description: 'Active water leak',
+      severity: 'moderate', 
+      repairDue: 30,
+      hcvRating: 'fail' 
+    },
     
-    // Could add many more based on the NSPIRE document
+    // Electrical
+    'exposed_wiring': {
+      category: 'electrical',
+      description: 'Exposed electrical wiring',
+      severity: 'lifeThreatening',
+      repairDue: 24,
+      hcvRating: 'fail'
+    },
+    'missing_outlet_cover': {
+      category: 'electrical',
+      description: 'Missing electrical outlet cover',
+      severity: 'severe',
+      repairDue: 24,
+      hcvRating: 'fail'
+    },
+    'missing_gfci': {
+      category: 'electrical',
+      description: 'Missing GFCI protection near water source',
+      severity: 'severe',
+      repairDue: 30,
+      hcvRating: 'fail'
+    },
+    
+    // Unit Issues
+    'broken_window': {
+      category: 'unit',
+      description: 'Broken window glass',
+      severity: 'severe',
+      repairDue: 24,
+      hcvRating: 'fail'
+    },
+    'inoperable_toilet': {
+      category: 'unit',
+      description: 'Inoperable toilet',
+      severity: 'severe',
+      repairDue: 24,
+      hcvRating: 'fail'
+    },
+    'water_damage': {
+      category: 'unit',
+      description: 'Water damage on ceiling/walls',
+      severity: 'moderate',
+      repairDue: 30,
+      hcvRating: 'fail'
+    }
   };
 
   useEffect(() => {
@@ -385,7 +494,51 @@ export const InspectionProvider = ({ children }) => {
         timestamp: new Date().toISOString()
       };
       
-      // Update the finding with the new photo
+      // Check if this is an area-based finding
+      if (inspection.areas) {
+        // Find which area contains this finding
+        let areaFound = false;
+        const updatedAreas = inspection.areas.map(area => {
+          if (!area.findings) return area;
+          
+          const findingIndex = area.findings.findIndex(f => f.id === findingId);
+          if (findingIndex >= 0) {
+            areaFound = true;
+            const updatedFindings = [...area.findings];
+            updatedFindings[findingIndex] = {
+              ...updatedFindings[findingIndex],
+              photos: [...(updatedFindings[findingIndex].photos || []), photo],
+              updatedAt: new Date().toISOString()
+            };
+            return { ...area, findings: updatedFindings };
+          }
+          return area;
+        });
+        
+        if (areaFound) {
+          // Update the inspection with updated areas
+          await updateDoc(doc(db, 'inspections', inspectionId), {
+            areas: updatedAreas,
+            updatedAt: new Date().toISOString()
+          });
+          
+          // Update local state
+          setInspections(prev => 
+            prev.map(inspection => 
+              inspection.id === inspectionId
+                ? { 
+                    ...inspection, 
+                    areas: updatedAreas,
+                    updatedAt: new Date().toISOString()
+                  }
+                : inspection
+            )
+          );
+          return;
+        }
+      }
+      
+      // Traditional finding update (not area-based)
       const updatedFindings = inspection.findings.map(finding => 
         finding.id === findingId
           ? { 

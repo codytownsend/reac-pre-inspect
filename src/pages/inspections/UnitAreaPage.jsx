@@ -1,4 +1,4 @@
-// src/pages/inspections/UnitAreaPage.jsx
+// src/pages/inspections/UnitAreaPage.jsx - Modern mobile design
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
@@ -10,11 +10,11 @@ import Loading from '../../components/Loading';
 import { 
   Home, 
   Plus, 
-  CheckCircle, 
+  AlertCircle, 
   AlertTriangle, 
-  Clock, 
+  CheckCircle, 
   ChevronRight,
-  AlertCircle
+  Clock
 } from 'lucide-react';
 
 const UnitAreaPage = () => {
@@ -60,24 +60,29 @@ const UnitAreaPage = () => {
   };
   
   const getSeverityIcon = (unit) => {
-    if (!unit.findings || unit.findings.length === 0) return null;
+    if (!unit.findings || unit.findings.length === 0) {
+      return <CheckCircle size={20} className="text-green-500" />;
+    }
     
+    // Check for life-threatening findings
     const hasLifeThreatening = unit.findings.some(f => f.severity === 'lifeThreatening');
     if (hasLifeThreatening) {
-      return <AlertCircle size={18} className="text-red-500" />;
+      return <AlertCircle size={20} className="text-red-500" />;
     }
     
+    // Check for severe findings
     const hasSevere = unit.findings.some(f => f.severity === 'severe');
     if (hasSevere) {
-      return <AlertTriangle size={18} className="text-orange-500" />;
+      return <AlertTriangle size={20} className="text-orange-500" />;
     }
     
+    // Check for moderate findings
     const hasModerate = unit.findings.some(f => f.severity === 'moderate');
     if (hasModerate) {
-      return <Clock size={18} className="text-yellow-500" />;
+      return <Clock size={20} className="text-yellow-500" />;
     }
     
-    return <CheckCircle size={18} className="text-green-500" />;
+    return <CheckCircle size={20} className="text-green-500" />;
   };
   
   if (loading) {
@@ -96,7 +101,7 @@ const UnitAreaPage = () => {
   }
   
   return (
-    <div className="container pb-16">
+    <div className="inspection-page">
       <Header 
         title="Units" 
         showBack={true}
@@ -104,92 +109,66 @@ const UnitAreaPage = () => {
       
       {error && <Alert type="danger" message={error} />}
       
-      {/* Instructions Card */}
-      <Card className="mb-4 bg-blue-50">
-        <div className="flex items-start">
-          <div className="bg-blue-100 p-2 rounded-full mr-3">
-            <Home size={24} className="text-blue-600" />
-          </div>
-          <div>
-            <h2 className="font-bold text-blue-800">Unit Inspection</h2>
-            <p className="text-sm text-blue-600">
-              Add units to inspect and record findings for each unit. Units can be apartments, 
-              houses, or any dwelling spaces. Tap on a unit to view or add findings.
-            </p>
-          </div>
-        </div>
-      </Card>
-      
-      {/* Units List */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-bold">Units ({units.length})</h2>
-          <Button 
-            variant="primary"
-            onClick={handleAddUnit}
-          >
-            <Plus size={16} className="mr-1" /> Add Unit
-          </Button>
-        </div>
-        
-        {units.length === 0 ? (
-          <Card className="p-4 text-center">
-            <p className="text-gray-500 mb-4">No units have been added yet.</p>
-            <Button 
-              variant="primary"
-              onClick={handleAddUnit}
-            >
-              <Plus size={16} className="mr-1" /> Add First Unit
-            </Button>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {units.map((unit) => (
-              <Card 
-                key={unit.id} 
-                className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/inspections/${id}/units/${unit.id}`)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="bg-blue-100 p-3 rounded-lg mr-4">
-                      <Home size={20} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold">{unit.name}</h3>
-                      <div className="flex items-center">
-                        <span className="text-sm text-gray-500 mr-2">
-                          {unit.findings ? unit.findings.length : 0} findings
-                        </span>
-                        {getSeverityIcon(unit)}
-                      </div>
-                    </div>
-                  </div>
-                  <ChevronRight size={20} className="text-gray-400" />
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+      <div className="action-bar">
+        <span className="unit-count">{units.length} Units</span>
+        <Button 
+          variant="primary" 
+          onClick={handleAddUnit}
+        >
+          <Plus size={16} className="mr-1" /> Add Unit
+        </Button>
       </div>
       
-      {/* Action Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 py-3 px-4 bg-white border-t">
-        <div className="container flex justify-between">
-          <Button 
-            variant="secondary" 
-            onClick={() => navigate(`/inspections/${id}`)}
-          >
-            Back to Inspection
-          </Button>
-          
+      {units.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">
+            <Home size={48} className="text-gray-300" />
+          </div>
+          <h3>No Units Added</h3>
+          <p>Add your first unit to begin inspection</p>
           <Button 
             variant="primary" 
             onClick={handleAddUnit}
           >
-            <Plus size={16} className="mr-1" /> Add Unit
+            <Plus size={16} className="mr-1" /> Add First Unit
           </Button>
         </div>
+      ) : (
+        <div className="units-list">
+          {units.map((unit) => (
+            <div 
+              key={unit.id} 
+              className="unit-card"
+              onClick={() => navigate(`/inspections/${id}/units/${unit.id}`)}
+            >
+              <div className="unit-icon">
+                <Home size={20} className="text-blue-500" />
+              </div>
+              <div className="unit-info">
+                <h3 className="unit-name">{unit.name}</h3>
+                <div className="unit-meta">
+                  <span className="finding-count">
+                    {unit.findings?.length || 0} Findings
+                  </span>
+                </div>
+              </div>
+              <div className="unit-status">
+                {getSeverityIcon(unit)}
+                <ChevronRight size={20} className="text-gray-400 ml-2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      <div className="fab-container">
+        <button 
+          className="fab"
+          onClick={handleAddUnit}
+          aria-label="Add Unit"
+        >
+          <Plus size={24} />
+        </button>
       </div>
     </div>
   );

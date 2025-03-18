@@ -1,4 +1,4 @@
-// src/pages/inspections/InspectionMain.jsx
+// src/pages/inspections/InspectionMain.jsx - Improved version
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
@@ -13,12 +13,10 @@ import {
   Building, 
   Grid, 
   CheckSquare, 
-  PenTool, 
-  Users, 
-  Clipboard, 
   Download,
   Share2, 
-  ChevronRight 
+  ChevronRight, 
+  Plus 
 } from 'lucide-react';
 
 const InspectionMain = () => {
@@ -63,13 +61,6 @@ const InspectionMain = () => {
     loadData();
   }, [id, getInspection, getProperty, calculateScore, navigate]);
   
-  const getScoreColor = (score) => {
-    if (score >= 90) return 'bg-green-100 text-green-800';
-    if (score >= 80) return 'bg-blue-100 text-blue-800';
-    if (score >= 60) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-red-100 text-red-800';
-  };
-  
   const getInspectionCycle = (score) => {
     if (score >= 90) return '3 Years';
     if (score >= 80) return '2 Years';
@@ -79,10 +70,6 @@ const InspectionMain = () => {
   
   const handleGenerateReport = () => {
     navigate(`/inspections/${id}/report`);
-  };
-  
-  const handleShareReport = () => {
-    navigate(`/inspections/${id}/share`);
   };
   
   if (loading) {
@@ -116,7 +103,7 @@ const InspectionMain = () => {
     .reduce((sum, area) => sum + (area.findings?.length || 0), 0) || 0;
   
   return (
-    <div className="container pb-16">
+    <div className="container">
       <Header 
         title="Inspection Details" 
         showBack={true}
@@ -126,179 +113,81 @@ const InspectionMain = () => {
       
       {/* Inspection Header Card */}
       <Card className="mb-4">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-xl font-bold">{property.name}</h1>
-            <p className="text-gray-500">{property.address}</p>
+        <div className="property-header">
+          <h2>{property.name}</h2>
+          <p className="property-address">{property.address}</p>
+        </div>
+        
+        <div className="inspection-meta">
+          <div className="meta-item">
+            <strong>Date:</strong> {new Date(inspection.date).toLocaleDateString()}
           </div>
-          <div className={`px-4 py-2 rounded-full font-bold ${getScoreColor(score)}`}>
-            Score: {score}
+          <div className="meta-item">
+            <strong>Inspector:</strong> {inspection.inspector}
+          </div>
+          <div className="meta-item">
+            <strong>Status:</strong> <span className={`status-badge status-${inspection.status.toLowerCase().replace(/\s+/g, '-')}`}>{inspection.status}</span>
+          </div>
+          <div className="meta-item">
+            <strong>Score:</strong> <span className="score">{score}</span>
+            <span className="inspection-cycle">({getInspectionCycle(score)})</span>
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="text-sm text-gray-500">Inspection Date</p>
-            <p className="font-medium">{new Date(inspection.date).toLocaleDateString()}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Inspector</p>
-            <p className="font-medium">{inspection.inspector}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Status</p>
-            <p className="font-medium">{inspection.status}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Inspection Cycle</p>
-            <p className="font-medium">{getInspectionCycle(score)}</p>
-          </div>
-        </div>
-        
-        <div className="border-t pt-4 flex gap-2 justify-end">
-          <Button
-            variant="secondary"
-            onClick={handleShareReport}
-          >
-            <Share2 size={16} className="mr-1" /> Share
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleGenerateReport}
-          >
+        <div className="action-buttons">
+          <Button variant="secondary" onClick={handleGenerateReport}>
             <Download size={16} className="mr-1" /> Report
           </Button>
         </div>
       </Card>
       
-      {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card className="flex items-center p-4 justify-between">
-          <div className="flex flex-col">
-            <span className="text-sm text-gray-500">Units</span>
-            <span className="text-xl font-bold">{unitCount}</span>
-            <span className="text-xs text-gray-500">{unitFindings} findings</span>
-          </div>
-          <Home size={32} className="text-gray-400" />
-        </Card>
-        
-        <Card className="flex items-center p-4 justify-between">
-          <div className="flex flex-col">
-            <span className="text-sm text-gray-500">Inside</span>
-            <span className="text-xl font-bold">{insideLocations}</span>
-            <span className="text-xs text-gray-500">{insideFindings} findings</span>
-          </div>
-          <Building size={32} className="text-gray-400" />
-        </Card>
-        
-        <Card className="flex items-center p-4 justify-between">
-          <div className="flex flex-col">
-            <span className="text-sm text-gray-500">Outside</span>
-            <span className="text-xl font-bold">{outsideLocations}</span>
-            <span className="text-xs text-gray-500">{outsideFindings} findings</span>
-          </div>
-          <Grid size={32} className="text-gray-400" />
-        </Card>
-      </div>
-      
       {/* Areas Grid */}
-      <h2 className="text-lg font-bold mb-4">Inspection Areas</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Units Area Card */}
-        <Card 
-          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate(`/inspections/${id}/areas/units`)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="bg-blue-100 p-3 rounded-lg mr-4">
-                <Home size={24} className="text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-bold">Units</h3>
-                <p className="text-sm text-gray-500">Dwelling units and apartments</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </div>
-        </Card>
-        
-        {/* Inside Area Card */}
-        <Card 
-          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate(`/inspections/${id}/areas/inside`)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="bg-purple-100 p-3 rounded-lg mr-4">
-                <Building size={24} className="text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-bold">Inside</h3>
-                <p className="text-sm text-gray-500">Common areas and building systems</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </div>
-        </Card>
-        
-        {/* Outside Area Card */}
-        <Card 
-          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate(`/inspections/${id}/areas/outside`)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="bg-green-100 p-3 rounded-lg mr-4">
-                <Grid size={24} className="text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-bold">Outside</h3>
-                <p className="text-sm text-gray-500">Building exterior, site, and grounds</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </div>
-        </Card>
-        
-        {/* NSPIRE Standards Reference Card */}
-        <Card 
-          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate(`/inspections/${id}/standards`)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="bg-orange-100 p-3 rounded-lg mr-4">
-                <Clipboard size={24} className="text-orange-600" />
-              </div>
-              <div>
-                <h3 className="font-bold">NSPIRE Standards</h3>
-                <p className="text-sm text-gray-500">Reference guide and definitions</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </div>
-        </Card>
-      </div>
+      <h2 className="section-title">Inspection Areas</h2>
       
-      {/* Action Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 py-3 px-4 bg-white border-t">
-        <div className="container flex justify-between">
-          <Button 
-            variant="secondary" 
-            onClick={() => navigate('/inspections')}
-          >
-            Back to List
-          </Button>
-          
-          <Button 
-            variant="primary" 
-            onClick={handleGenerateReport}
-          >
-            Generate Report
-          </Button>
+      {/* Units Area Card */}
+      <Card 
+        className="inspection-area-card"
+        onClick={() => navigate(`/inspections/${id}/areas/units`)}
+      >
+        <div className="area-icon">
+          <Home size={24} />
         </div>
-      </div>
+        <div className="area-info">
+          <h3>Units</h3>
+          <p>{unitCount} units, {unitFindings} findings</p>
+        </div>
+        <ChevronRight size={20} className="area-chevron" />
+      </Card>
+      
+      {/* Inside Area Card */}
+      <Card 
+        className="inspection-area-card"
+        onClick={() => navigate(`/inspections/${id}/areas/inside`)}
+      >
+        <div className="area-icon">
+          <Building size={24} />
+        </div>
+        <div className="area-info">
+          <h3>Inside</h3>
+          <p>{insideLocations} locations, {insideFindings} findings</p>
+        </div>
+        <ChevronRight size={20} className="area-chevron" />
+      </Card>
+      
+      {/* Outside Area Card */}
+      <Card 
+        className="inspection-area-card"
+        onClick={() => navigate(`/inspections/${id}/areas/outside`)}
+      >
+        <div className="area-icon">
+          <Grid size={24} />
+        </div>
+        <div className="area-info">
+          <h3>Outside</h3>
+          <p>{outsideLocations} locations, {outsideFindings} findings</p>
+        </div>
+        <ChevronRight size={20} className="area-chevron" />
+      </Card>
     </div>
   );
 };
