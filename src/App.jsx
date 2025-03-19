@@ -38,6 +38,7 @@ import NotFound from './pages/NotFound';
 import { AuthProvider } from './context/AuthContext';
 import { PropertyProvider } from './context/PropertyContext';
 import { InspectionProvider } from './context/InspectionContext';
+import { useAuth } from './context/AuthContext';
 
 const AppContent = () => {
   const { currentUser, loading } = useAuth();

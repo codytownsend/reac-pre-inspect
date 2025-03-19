@@ -1,4 +1,7 @@
 /* src/index.css - Updated with modern inspection styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Base styles from original file */
 body {
