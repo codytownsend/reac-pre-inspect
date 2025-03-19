@@ -17,7 +17,8 @@ import {
   DoorOpen,
   Wrench,
   Users,
-  Coffee
+  Coffee,
+  Plus
 } from 'lucide-react';
 
 const AddAreaPage = () => {
@@ -41,14 +42,84 @@ const AddAreaPage = () => {
       ? 'inside' 
       : 'outside';
   
+  // Configuration based on area category type
+  const config = {
+    unit: {
+      title: 'Add Unit',
+      icon: Home,
+      color: 'blue',
+      backPath: `/inspections/${id}/units`,
+      description: 'Enter the unit number or identifier for the residential unit you are inspecting.',
+      placeholder: 'e.g., 101, A1, or Suite 303',
+    },
+    inside: {
+      title: 'Add Inside Area',
+      icon: Building,
+      color: 'purple',
+      backPath: `/inspections/${id}/inside`,
+      description: 'Select the type of inside area you\'re inspecting.',
+      quickAdd: [
+        { id: 'hallway', name: 'Hallway', icon: DoorOpen },
+        { id: 'laundry', name: 'Laundry', icon: Wrench },
+        { id: 'community', name: 'Community Room', icon: Users },
+        { id: 'office', name: 'Office', icon: Coffee },
+        { id: 'elevator', name: 'Elevator', icon: Building },
+      ],
+      areaTypes: [
+        { id: 'hallway', name: 'Hallway/Corridor', icon: DoorOpen },
+        { id: 'laundry', name: 'Laundry Room', icon: Wrench },
+        { id: 'community', name: 'Community Room', icon: Users },
+        { id: 'office', name: 'Office/Admin Area', icon: Coffee },
+        { id: 'mechanical', name: 'Mechanical Room', icon: Wrench },
+        { id: 'storage', name: 'Storage Area', icon: Building },
+        { id: 'stairwell', name: 'Stairwell', icon: Building },
+        { id: 'elevator', name: 'Elevator', icon: Building },
+        { id: 'other', name: 'Other Inside Area', icon: Building }
+      ]
+    },
+    outside: {
+      title: 'Add Outside Area',
+      icon: Grid,
+      color: 'green',
+      backPath: `/inspections/${id}/outside`,
+      description: 'Select the type of outside area you want to inspect.',
+      quickAdd: [
+        { id: 'building', name: 'Building Exterior', icon: Home },
+        { id: 'parking', name: 'Parking Lot', icon: ParkingSquare },
+        { id: 'grounds', name: 'Grounds', icon: TreePine },
+        { id: 'playground', name: 'Playground', icon: Wind },
+        { id: 'trash', name: 'Trash Area', icon: Grid },
+      ],
+      areaTypes: [
+        { id: 'building', name: 'Building Exterior', icon: Home },
+        { id: 'parking', name: 'Parking Lot', icon: ParkingSquare },
+        { id: 'grounds', name: 'Grounds/Landscaping', icon: TreePine },
+        { id: 'playground', name: 'Playground', icon: Wind },
+        { id: 'walkway', name: 'Walkway/Path', icon: Grid },
+        { id: 'fence', name: 'Fence/Gate', icon: Grid },
+        { id: 'roof', name: 'Roof', icon: Home },
+        { id: 'trash', name: 'Trash Area', icon: Grid },
+        { id: 'other', name: 'Other Outside Area', icon: Grid }
+      ]
+    }
+  };
+  
   // Parse type from query string if present
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const typeParam = queryParams.get('type');
     if (typeParam) {
       setAreaType(typeParam);
+      
+      // For inside/outside areas, auto-generate a name based on the type
+      if (areaCategoryType !== 'unit') {
+        const typeConfig = config[areaCategoryType].areaTypes.find(t => t.id === typeParam);
+        if (typeConfig) {
+          setAreaName(typeConfig.name);
+        }
+      }
     }
-  }, [location.search]);
+  }, [location.search, areaCategoryType, config]);
   
   useEffect(() => {
     const loadData = async () => {
@@ -71,68 +142,15 @@ const AddAreaPage = () => {
     loadData();
   }, [id, getInspection, navigate]);
   
-  // Configuration based on area category type
-  const config = {
-    unit: {
-      title: 'Add Unit',
-      icon: Home,
-      color: 'blue',
-      backPath: `/inspections/${id}/areas/units`,
-      description: 'Enter the unit number or identifier for the residential unit you are inspecting.',
-      showTypeSelector: false,
-      placeholder: 'e.g., 101, A1, or Suite 303',
-      areaTypes: [],
-      suggestions: ['101', '102', '103', '201', '202', '203']
-    },
-    inside: {
-      title: 'Add Inside Area',
-      icon: Building,
-      color: 'purple',
-      backPath: `/inspections/${id}/areas/inside`,
-      description: 'Enter a name and select the type of inside area you\'re inspecting.',
-      showTypeSelector: true,
-      placeholder: 'e.g., Main Hallway, Laundry Room, Lobby',
-      areaTypes: [
-        { id: 'hallway', name: 'Hallway/Corridor', icon: <DoorOpen size={24} /> },
-        { id: 'laundry', name: 'Laundry Room', icon: <Wrench size={24} /> },
-        { id: 'community', name: 'Community Room', icon: <Users size={24} /> },
-        { id: 'office', name: 'Office/Admin Area', icon: <Coffee size={24} /> },
-        { id: 'mechanical', name: 'Mechanical Room', icon: <Wrench size={24} /> },
-        { id: 'storage', name: 'Storage Area', icon: <Building size={24} /> },
-        { id: 'stairwell', name: 'Stairwell', icon: <Building size={24} /> },
-        { id: 'elevator', name: 'Elevator', icon: <Building size={24} /> },
-        { id: 'other', name: 'Other Inside Area', icon: <Building size={24} /> }
-      ]
-    },
-    outside: {
-      title: 'Add Outside Area',
-      icon: Grid,
-      color: 'green',
-      backPath: `/inspections/${id}/areas/outside`,
-      description: 'Enter a name and select the type of outside area. After saving, you\'ll be able to add findings for this area.',
-      showTypeSelector: true,
-      placeholder: 'e.g., North Parking Lot, Main Building Exterior',
-      areaTypes: [
-        { id: 'building', name: 'Building Exterior', icon: <Home size={24} /> },
-        { id: 'parking', name: 'Parking Lot', icon: <ParkingSquare size={24} /> },
-        { id: 'grounds', name: 'Grounds/Landscaping', icon: <TreePine size={24} /> },
-        { id: 'playground', name: 'Playground', icon: <Wind size={24} /> },
-        { id: 'walkway', name: 'Walkway/Path', icon: <Grid size={24} /> },
-        { id: 'fence', name: 'Fence/Gate', icon: <Grid size={24} /> },
-        { id: 'roof', name: 'Roof', icon: <Home size={24} /> },
-        { id: 'trash', name: 'Trash Area', icon: <Grid size={24} /> },
-        { id: 'other', name: 'Other Outside Area', icon: <Grid size={24} /> }
-      ]
-    }
-  }[areaCategoryType];
-  
   const handleSave = async () => {
-    if (!areaName.trim()) {
-      setError('Please enter an area name');
+    // For unit areas, we need a name
+    if (areaCategoryType === 'unit' && !areaName.trim()) {
+      setError('Please enter a unit number');
       return;
     }
     
-    if (config.showTypeSelector && !areaType) {
+    // For inside/outside areas, we need a type
+    if (areaCategoryType !== 'unit' && !areaType) {
       setError('Please select an area type');
       return;
     }
@@ -140,21 +158,36 @@ const AddAreaPage = () => {
     try {
       setSaving(true);
       
-      // Check if an area with the same name already exists
-      const exists = inspection.areas?.some(
-        area => area.areaType === areaCategoryType && area.name.toLowerCase() === areaName.trim().toLowerCase()
-      );
+      // For units, check for duplicate names
+      if (areaCategoryType === 'unit') {
+        const exists = inspection.areas?.some(
+          area => area.areaType === 'unit' && area.name.toLowerCase() === areaName.trim().toLowerCase()
+        );
+        
+        if (exists) {
+          setError(`Unit "${areaName}" already exists`);
+          setSaving(false);
+          return;
+        }
+      }
       
-      if (exists) {
-        setError(`An area named "${areaName}" already exists`);
-        setSaving(false);
-        return;
+      // Get name for area
+      let finalAreaName = areaName.trim();
+      
+      // For inside/outside areas, use the type name if no name provided
+      if (areaCategoryType !== 'unit' && !finalAreaName && areaType) {
+        const typeConfig = config[areaCategoryType].areaTypes.find(t => t.id === areaType);
+        if (typeConfig) {
+          finalAreaName = typeConfig.name;
+        } else {
+          finalAreaName = areaType.charAt(0).toUpperCase() + areaType.slice(1);
+        }
       }
       
       // Create a new area
       const newArea = {
         id: `${areaCategoryType}-${Date.now()}`,
-        name: areaName.trim(),
+        name: finalAreaName,
         areaType: areaCategoryType,
         type: areaType || undefined,
         findings: [],
@@ -178,11 +211,22 @@ const AddAreaPage = () => {
     }
   };
   
+  const handleQuickAdd = (typeId, typeName) => {
+    setAreaType(typeId);
+    setAreaName(typeName);
+    
+    // Auto-save after a short delay to mimic a quick-add experience
+    setSaving(true);
+    setTimeout(() => {
+      handleSave();
+    }, 300);
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading inspection...</p>
         </div>
       </div>
@@ -201,7 +245,7 @@ const AddAreaPage = () => {
             {error || "The inspection you're looking for doesn't exist or has been removed."}
           </p>
           <button 
-            className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium"
+            className="w-full py-3 bg-gray-800 text-white rounded-lg font-medium"
             onClick={() => navigate('/inspections')}
           >
             Back to Inspections
@@ -211,6 +255,9 @@ const AddAreaPage = () => {
     );
   }
   
+  // Get the appropriate icon component
+  const IconComponent = config[areaCategoryType].icon;
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* App Bar */}
@@ -218,22 +265,25 @@ const AddAreaPage = () => {
         <div className="flex items-center">
           <button
             className="p-2 rounded-full hover:bg-gray-100 mr-2"
-            onClick={() => navigate(config.backPath)}
+            onClick={() => navigate(config[areaCategoryType].backPath)}
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-bold">{config.title}</h1>
+          <h1 className="text-xl font-bold">{config[areaCategoryType].title}</h1>
         </div>
         
-        <button
-          className={`p-2 rounded-full hover:bg-gray-100 ${
-            saving || !areaName.trim() || (config.showTypeSelector && !areaType) ? 'text-gray-300' : `text-${config.color}-500`
-          }`}
-          onClick={handleSave}
-          disabled={saving || !areaName.trim() || (config.showTypeSelector && !areaType)}
-        >
-          <Save size={20} />
-        </button>
+        {/* Add save button to app bar for inside/outside areas */}
+        {areaCategoryType !== 'unit' && (
+          <button
+            className={`p-2 rounded-full hover:bg-gray-100 ${
+              saving || !areaType ? 'text-gray-300' : `text-${config[areaCategoryType].color}-500`
+            }`}
+            onClick={handleSave}
+            disabled={saving || !areaType}
+          >
+            <Save size={20} />
+          </button>
+        )}
       </div>
       
       {error && (
@@ -245,102 +295,113 @@ const AddAreaPage = () => {
       
       {/* Info Card */}
       <div className="p-4">
-        <div className={`bg-${config.color}-50 rounded-xl p-4 flex items-start`}>
-          <div className={`bg-${config.color}-100 p-2 rounded-full mr-3`}>
-            <config.icon className={`text-${config.color}-500`} />
+        <div className={`bg-${config[areaCategoryType].color}-50 rounded-xl p-4 flex items-start`}>
+          <div className={`bg-${config[areaCategoryType].color}-100 p-2 rounded-full mr-3`}>
+            <IconComponent className={`text-${config[areaCategoryType].color}-500`} size={24} />
           </div>
           <div>
-            <h2 className={`font-bold text-${config.color}-800`}>{config.title}</h2>
-            <p className={`text-sm text-${config.color}-600`}>
-              {config.description}
+            <h2 className={`font-bold text-${config[areaCategoryType].color}-800`}>{config[areaCategoryType].title}</h2>
+            <p className={`text-sm text-${config[areaCategoryType].color}-600`}>
+              {config[areaCategoryType].description}
             </p>
           </div>
         </div>
       </div>
       
-      {/* Area Form */}
-      <div className="p-4">
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {areaCategoryType.charAt(0).toUpperCase() + areaCategoryType.slice(1)} Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            className={`w-full p-3 border ${error ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-${config.color}-500`}
-            placeholder={config.placeholder}
-            value={areaName}
-            onChange={(e) => setAreaName(e.target.value)}
-            autoFocus
-          />
-          {areaCategoryType === 'unit' && (
-            <p className="text-sm text-gray-500 mt-2">
-              This identifier will be used throughout inspection reports.
-            </p>
-          )}
-        </div>
-        
-        {/* Pre-filled suggestions for units */}
-        {areaCategoryType === 'unit' && (
+      {/* Quick Add Section - ONLY for inside/outside areas */}
+      {areaCategoryType !== 'unit' && config[areaCategoryType].quickAdd && (
+        <div className="p-4">
           <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Suggested Units</h3>
-            <div className="flex flex-wrap gap-2">
-              {config.suggestions.map(unit => (
-                <button
-                  key={unit}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 active:bg-gray-100"
-                  onClick={() => setAreaName(unit)}
-                >
-                  {unit}
-                </button>
-              ))}
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Add</h3>
+            <div className="flex overflow-x-auto gap-3 pb-2">
+              {config[areaCategoryType].quickAdd.map((item) => {
+                const QuickIcon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    className={`flex flex-col items-center justify-center p-3 rounded-lg border border-gray-200 min-w-20 flex-shrink-0 hover:bg-${config[areaCategoryType].color}-50 hover:border-${config[areaCategoryType].color}-200 transition-colors`}
+                    onClick={() => handleQuickAdd(item.id, item.name)}
+                  >
+                    <div className={`bg-${config[areaCategoryType].color}-100 p-2 rounded-full mb-2`}>
+                      <QuickIcon size={20} className={`text-${config[areaCategoryType].color}-500`} />
+                    </div>
+                    <span className="text-sm whitespace-nowrap">{item.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
-        
-        {/* Area Type Selector */}
-        {config.showTypeSelector && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Area Type <span className="text-red-500">*</span>
+        </div>
+      )}
+      
+      {/* For units, show the unit name input ONLY */}
+      {areaCategoryType === 'unit' && (
+        <div className="p-4">
+          <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Unit Number <span className="text-red-500">*</span>
             </label>
+            <input
+              type="text"
+              className={`w-full p-3 border ${error ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-${config[areaCategoryType].color}-500`}
+              placeholder={config[areaCategoryType].placeholder}
+              value={areaName}
+              onChange={(e) => setAreaName(e.target.value)}
+              autoFocus
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* Inside/Outside Type Selector Grid */}
+      {areaCategoryType !== 'unit' && (
+        <div className="p-4">
+          <div className="bg-white rounded-xl shadow-sm p-4">
             <div className="grid grid-cols-2 gap-3">
-              {config.areaTypes.map((type) => (
-                <button
-                  key={type.id}
-                  type="button"
-                  className={`p-3 rounded-lg border flex items-center ${
-                    areaType === type.id 
-                      ? `border-${config.color}-500 bg-${config.color}-50 text-${config.color}-700` 
-                      : 'border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-700'
-                  }`}
-                  onClick={() => setAreaType(type.id)}
-                >
-                  <div className={`p-2 rounded-full mr-2 ${
-                    areaType === type.id ? `bg-${config.color}-100` : 'bg-gray-100'
-                  }`}>
-                    {type.icon}
-                  </div>
-                  <span>{type.name}</span>
-                </button>
-              ))}
+              {config[areaCategoryType].areaTypes.map((type) => {
+                const TypeIcon = type.icon;
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    className={`p-3 rounded-lg border flex items-center ${
+                      areaType === type.id 
+                        ? `border-${config[areaCategoryType].color}-500 bg-${config[areaCategoryType].color}-50 text-${config[areaCategoryType].color}-700` 
+                        : 'border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-700'
+                    }`}
+                    onClick={() => {
+                      setAreaType(type.id);
+                      setAreaName(type.name);
+                    }}
+                  >
+                    <div className={`p-2 rounded-full mr-2 ${
+                      areaType === type.id ? `bg-${config[areaCategoryType].color}-100` : 'bg-gray-100'
+                    }`}>
+                      <TypeIcon size={24} />
+                    </div>
+                    <span>{type.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       
       {/* Bottom Actions */}
       <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t">
         <div className="flex gap-3">
           <button 
             className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg font-medium flex items-center justify-center"
-            onClick={() => navigate(config.backPath)}
+            onClick={() => navigate(config[areaCategoryType].backPath)}
           >
             <X size={20} className="mr-2" /> Cancel
           </button>
+          
           <button 
-            className={`flex-1 py-3 px-4 bg-${config.color}-500 text-white rounded-lg font-medium flex items-center justify-center disabled:opacity-50`}
+            className={`flex-1 py-3 px-4 bg-gray-800 text-white rounded-lg font-medium flex items-center justify-center disabled:opacity-50`}
             onClick={handleSave}
-            disabled={saving || !areaName.trim() || (config.showTypeSelector && !areaType)}
+            disabled={saving || (areaCategoryType === 'unit' ? !areaName.trim() : !areaType)}
           >
             {saving ? (
               <>
@@ -349,7 +410,8 @@ const AddAreaPage = () => {
               </>
             ) : (
               <>
-                <Save size={20} className="mr-2" /> Save {areaCategoryType.charAt(0).toUpperCase() + areaCategoryType.slice(1)}
+                <Plus size={20} className="mr-2" /> 
+                Add {areaCategoryType === 'unit' ? 'Unit' : areaCategoryType === 'inside' ? 'Inside Area' : 'Outside Area'}
               </>
             )}
           </button>
@@ -358,7 +420,7 @@ const AddAreaPage = () => {
       
       {/* Success Toast */}
       {showSuccessToast && (
-        <div className="fixed bottom-32 left-0 right-0 mx-auto w-max px-4 py-2 bg-green-500 text-white rounded-full shadow-lg flex items-center">
+        <div className="fixed bottom-32 left-0 right-0 mx-auto w-max px-4 py-2 bg-gray-800 text-white rounded-full shadow-lg flex items-center">
           <Check size={18} className="mr-2" />
           {areaCategoryType.charAt(0).toUpperCase() + areaCategoryType.slice(1)} added successfully!
         </div>
