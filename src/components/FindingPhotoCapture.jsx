@@ -110,12 +110,12 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
   };
 
   return (
-    <div className="photo-capture">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
       {/* Header */}
-      <div className="photo-capture__header">
-        <h2 className="photo-capture__title">Capture Photo</h2>
+      <div className="bg-black bg-opacity-50 p-4 flex justify-between items-center">
+        <h2 className="text-white text-lg font-medium">Capture Photo</h2>
         <button 
-          className="photo-capture__close"
+          className="w-10 h-10 flex items-center justify-center rounded-full text-white hover:bg-white hover:bg-opacity-20 transition-colors"
           onClick={onClose}
           aria-label="Close"
         >
@@ -124,32 +124,32 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
       </div>
       
       {/* Main content */}
-      <div className="photo-capture__content">
+      <div className="flex-1 flex items-center justify-center bg-black">
         {capturedImage ? (
           // Show captured image
           <img 
             src={capturedImage} 
             alt="Captured" 
-            className="photo-capture__preview"
+            className="max-h-full max-w-full object-contain"
           />
         ) : (
           // Show camera view or error
           <>
             {loading ? (
               // Loading state
-              <div className="photo-capture__loading">
-                <div className="photo-capture__loading-spinner"></div>
+              <div className="text-white flex flex-col items-center">
+                <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p>Accessing camera...</p>
               </div>
             ) : error ? (
               // Error state
-              <div className="photo-capture__error">
-                <div className="photo-capture__error-icon">
+              <div className="text-white p-6 text-center max-w-md">
+                <div className="bg-red-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <X size={32} />
                 </div>
-                <p className="photo-capture__error-message">{error}</p>
+                <p className="mb-8">{error}</p>
                 <button 
-                  className="modern-btn modern-btn--primary"
+                  className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg flex items-center justify-center mx-auto"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Image size={20} className="mr-2" /> 
@@ -161,7 +161,6 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
                   className="hidden"
                   accept="image/*" 
                   onChange={handleFileUpload}
-                  style={{ display: 'none' }}
                 />
               </div>
             ) : (
@@ -170,29 +169,29 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
-                className="photo-capture__video"
+                className="w-full h-full object-cover"
                 onCanPlay={() => setLoading(false)}
               />
             )}
           </>
         )}
         
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        <canvas ref={canvasRef} className="hidden" />
       </div>
       
       {/* Footer controls */}
-      <div className="photo-capture__footer">
+      <div className="bg-black bg-opacity-50 p-4">
         {capturedImage ? (
           // Controls for captured image
-          <div className="photo-capture__controls">
+          <div className="flex justify-between max-w-md mx-auto">
             <button 
-              className="photo-capture__retake"
+              className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg flex items-center"
               onClick={handleRetake}
             >
               <RefreshCw size={20} className="mr-2" /> Retake
             </button>
             <button 
-              className="photo-capture__use"
+              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center"
               onClick={handleSave}
             >
               <Check size={20} className="mr-2" /> Use Photo
@@ -200,18 +199,20 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
           </div>
         ) : !error && !loading ? (
           // Camera controls
-          <button 
-            className="photo-capture__capture-button" 
-            onClick={capturePhoto}
-            aria-label="Take photo"
-          >
-            <div className="photo-capture__capture-button-inner"></div>
-          </button>
+          <div className="flex justify-center">
+            <button 
+              className="w-16 h-16 rounded-full bg-white border-4 border-gray-300 flex items-center justify-center"
+              onClick={capturePhoto}
+              aria-label="Take photo"
+            >
+              <div className="w-12 h-12 rounded-full bg-white"></div>
+            </button>
+          </div>
         ) : (
           // If there's an error or loading, show option to select from gallery
           !loading && (
             <button 
-              className="photo-capture__upload-button"
+              className="bg-blue-500 hover:bg-blue-600 w-full max-w-md mx-auto text-white py-3 rounded-lg flex items-center justify-center"
               onClick={() => fileInputRef.current?.click()}
             >
               <Image size={20} className="mr-2" /> 

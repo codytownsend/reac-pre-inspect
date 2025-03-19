@@ -7,7 +7,6 @@ import {
   AlertCircle, 
   ArrowLeft,
   Download, 
-  Share2,
   Building,
   Home,
   Grid,
@@ -104,10 +103,10 @@ const InspectionMain = () => {
   };
   
   const getSeverityStatusIcon = (status) => {
-    if (status === 'critical') return <AlertCircle size={18} className="severity-icon--critical" />;
-    if (status === 'serious') return <AlertTriangle size={18} className="severity-icon--serious" />;
-    if (status === 'concerns') return <Clock size={18} className="severity-icon--moderate" />;
-    return <CheckCircle size={18} className="severity-icon--minor" />;
+    if (status === 'critical') return <AlertCircle className="text-red-500" size={18} />;
+    if (status === 'serious') return <AlertTriangle className="text-orange-500" size={18} />;
+    if (status === 'concerns') return <Clock className="text-yellow-500" size={18} />;
+    return <CheckCircle className="text-green-500" size={18} />;
   };
   
   if (loading) {
@@ -187,8 +186,9 @@ const InspectionMain = () => {
         
         <div className="flex items-center">
           <button
-            className="p-2 rounded-full hover:bg-gray-100"
+            className="p-2 rounded-full hover:bg-gray-100 text-blue-500"
             onClick={handleGenerateReport}
+            aria-label="Generate Report"
           >
             <Download size={20} />
           </button>
@@ -197,8 +197,8 @@ const InspectionMain = () => {
       
       {error && (
         <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
-          <AlertCircle size={20} className="mr-2" />
-          {error}
+          <AlertCircle size={20} className="mr-2 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
       
@@ -243,7 +243,7 @@ const InspectionMain = () => {
           </div>
           
           <div className="p-4 flex items-center">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl ${getScoreColorClass()}`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl ${getScoreColorClass()} shadow-md`}>
               {score}
             </div>
             
@@ -259,7 +259,7 @@ const InspectionMain = () => {
       
       {/* Inspection Areas */}
       <div className="px-4">
-        <h3 className="font-bold mb-3">Inspection Areas</h3>
+        <h3 className="font-bold mb-3 text-gray-800">Inspection Areas</h3>
         
         {/* Units */}
         <div className="bg-white rounded-xl shadow-sm mb-3 overflow-hidden">
@@ -338,9 +338,9 @@ const InspectionMain = () => {
       </div>
       
       {/* Report Button */}
-      <div className="fixed bottom-16 left-0 right-0 py-4 px-4 bg-white border-t">
+      <div className="fixed bottom-16 left-0 right-0 py-4 px-4 bg-white border-t shadow-md">
         <button 
-          className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium flex items-center justify-center"
+          className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium flex items-center justify-center shadow-sm hover:bg-blue-600 active:bg-blue-700 transition-colors"
           onClick={handleGenerateReport}
         >
           <Download size={20} className="mr-2" />

@@ -297,7 +297,7 @@ const FindingForm = ({
             {categoryData?.subcategories.map(sub => (
               <div
                 key={sub}
-                className="bg-white rounded-lg shadow-sm overflow-hidden"
+                className="bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer hover:bg-gray-50 active:bg-gray-100"
                 onClick={() => handleSubcategorySelect(sub)}
               >
                 <div className="p-4 flex items-center justify-between">
@@ -363,7 +363,7 @@ const FindingForm = ({
               onChange={(e) => setDeficiency(e.target.value)}
               placeholder="Describe what's wrong..."
               rows={3}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               required
             ></textarea>
           </div>
@@ -421,7 +421,7 @@ const FindingForm = ({
               <select
                 value={repairStatus}
                 onChange={(e) => setRepairStatus(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="open">Open</option>
                 <option value="scheduled">Scheduled</option>
@@ -441,7 +441,7 @@ const FindingForm = ({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any additional notes..."
               rows={2}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             ></textarea>
           </div>
           

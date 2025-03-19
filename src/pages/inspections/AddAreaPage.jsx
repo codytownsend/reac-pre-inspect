@@ -75,7 +75,7 @@ const AddAreaPage = () => {
   const config = {
     unit: {
       title: 'Add Unit',
-      icon: <Home size={24} />,
+      icon: Home,
       color: 'blue',
       backPath: `/inspections/${id}/areas/units`,
       description: 'Enter the unit number or identifier for the residential unit you are inspecting.',
@@ -86,7 +86,7 @@ const AddAreaPage = () => {
     },
     inside: {
       title: 'Add Inside Area',
-      icon: <Building size={24} />,
+      icon: Building,
       color: 'purple',
       backPath: `/inspections/${id}/areas/inside`,
       description: 'Enter a name and select the type of inside area you\'re inspecting.',
@@ -106,7 +106,7 @@ const AddAreaPage = () => {
     },
     outside: {
       title: 'Add Outside Area',
-      icon: <Grid size={24} />,
+      icon: Grid,
       color: 'green',
       backPath: `/inspections/${id}/areas/outside`,
       description: 'Enter a name and select the type of outside area. After saving, you\'ll be able to add findings for this area.',
@@ -214,15 +214,15 @@ const AddAreaPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* App Bar */}
-      <div className="app-bar">
+      <div className="bg-white p-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
         <div className="flex items-center">
           <button
-            className="app-bar__back-button"
+            className="p-2 rounded-full hover:bg-gray-100 mr-2"
             onClick={() => navigate(config.backPath)}
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="app-bar__title">{config.title}</h1>
+          <h1 className="text-xl font-bold">{config.title}</h1>
         </div>
         
         <button
@@ -247,7 +247,7 @@ const AddAreaPage = () => {
       <div className="p-4">
         <div className={`bg-${config.color}-50 rounded-xl p-4 flex items-start`}>
           <div className={`bg-${config.color}-100 p-2 rounded-full mr-3`}>
-            {config.icon}
+            <config.icon className={`text-${config.color}-500`} />
           </div>
           <div>
             <h2 className={`font-bold text-${config.color}-800`}>{config.title}</h2>
@@ -287,7 +287,7 @@ const AddAreaPage = () => {
               {config.suggestions.map(unit => (
                 <button
                   key={unit}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 active:bg-gray-100"
                   onClick={() => setAreaName(unit)}
                 >
                   {unit}
@@ -311,7 +311,7 @@ const AddAreaPage = () => {
                   className={`p-3 rounded-lg border flex items-center ${
                     areaType === type.id 
                       ? `border-${config.color}-500 bg-${config.color}-50 text-${config.color}-700` 
-                      : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                      : 'border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-700'
                   }`}
                   onClick={() => setAreaType(type.id)}
                 >
@@ -332,13 +332,13 @@ const AddAreaPage = () => {
       <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t">
         <div className="flex gap-3">
           <button 
-            className="flex-1 py-3 px-4 bg-gray-100 rounded-lg font-medium flex items-center justify-center"
+            className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg font-medium flex items-center justify-center"
             onClick={() => navigate(config.backPath)}
           >
             <X size={20} className="mr-2" /> Cancel
           </button>
           <button 
-            className={`flex-1 py-3 px-4 bg-${config.color}-500 text-white rounded-lg font-medium flex items-center justify-center disabled:bg-${config.color}-300`}
+            className={`flex-1 py-3 px-4 bg-${config.color}-500 text-white rounded-lg font-medium flex items-center justify-center disabled:opacity-50`}
             onClick={handleSave}
             disabled={saving || !areaName.trim() || (config.showTypeSelector && !areaType)}
           >

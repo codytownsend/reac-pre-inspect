@@ -13,7 +13,8 @@ import {
   Trash2,
   MoreVertical,
   Edit,
-  Camera
+  Camera,
+  ChevronRight
 } from 'lucide-react';
 
 import FindingForm from '../../components/FindingForm';
@@ -341,23 +342,22 @@ const AreaDetail = () => {
                 'low': CheckCircle
               }[finding.severity] || CheckCircle;
               
+              const severityColors = {
+                'critical': 'red',
+                'serious': 'orange',
+                'moderate': 'yellow',
+                'minor': 'green'
+              }[severityClass];
+              
               return (
                 <div 
                   key={finding.id} 
-                  className={`bg-white rounded-lg shadow-sm border-l-4 border-${
-                    severityClass === 'critical' ? 'red' : 
-                    severityClass === 'serious' ? 'orange' :
-                    severityClass === 'moderate' ? 'yellow' : 'green'
-                  }-500`}
+                  className={`bg-white rounded-lg shadow-sm border-l-4 border-${severityColors}-500 cursor-pointer`}
                   onClick={() => handleEditFinding(finding)}
                 >
                   <div className="p-4">
-                    <div className="flex items-start mb-2">
-                      <div className={`mr-3 mt-1 text-${
-                        severityClass === 'critical' ? 'red' : 
-                        severityClass === 'serious' ? 'orange' :
-                        severityClass === 'moderate' ? 'yellow' : 'green'
-                      }-500`}>
+                    <div className="flex items-start">
+                      <div className={`mr-3 mt-1 text-${severityColors}-500`}>
                         <SeverityIcon size={20} />
                       </div>
                       <div className="flex-1">
@@ -381,6 +381,9 @@ const AreaDetail = () => {
                             ))}
                           </div>
                         )}
+                      </div>
+                      <div className="flex items-center text-gray-400 ml-2">
+                        <ChevronRight size={20} />
                       </div>
                     </div>
                   </div>

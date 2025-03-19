@@ -2,14 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
-import { useInspectionData } from '../../hooks/useInspectionData';
-import { getAreaConfig, getSeverityIcon, getSeverityClass } from '../../utils/areaUtils';
 import { 
   Plus, 
   AlertCircle, 
   ChevronRight,
   ArrowLeft,
   Search,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  Home,
+  Building,
+  Grid
 } from 'lucide-react';
 
 const AreaList = () => {
@@ -68,11 +72,7 @@ const AreaList = () => {
   );
   
   const handleAddArea = () => {
-    navigate(config.addPath(id));
-  };
-  
-  const handleQuickAdd = (quickAddType) => {
-    navigate(`${config.addPath(id)}?type=${quickAddType}`);
+    navigate(`/inspections/${id}/${areaType}/add`);
   };
   
   if (loading) {
@@ -108,9 +108,6 @@ const AreaList = () => {
     );
   }
   
-  // Create IconComponent from config
-  const IconComponent = config.icon;
-  
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* App Bar */}
@@ -134,8 +131,8 @@ const AreaList = () => {
       
       {error && (
         <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
-          <AlertCircle size={20} className="mr-2" />
-          {error}
+          <AlertCircle size={20} className="mr-2 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
       
@@ -149,10 +146,10 @@ const AreaList = () => {
               return (
                 <button 
                   key={item.type}
-                  className="flex flex-col items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
-                  onClick={() => handleQuickAdd(item.type)}
+                  className="flex flex-col items-center p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                  onClick={() => navigate(`${config.addPath(id)}?type=${item.type}`)}
                 >
-                  <div className={`text-${config.color}-500 mb-1`}>
+                  <div className={`text-${getColorForType(areaType)}-500 mb-1`}>
                     <ItemIcon size={20} />
                   </div>
                   <span className="text-xs">{item.label}</span>
@@ -169,7 +166,7 @@ const AreaList = () => {
           <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg"
+            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
             placeholder={`Search ${config.title.toLowerCase()}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -189,7 +186,7 @@ const AreaList = () => {
                 <h2 className="text-lg font-semibold mb-2">No results found</h2>
                 <p className="text-gray-600 text-center mb-4">No {areaType} areas found matching "{searchTerm}"</p>
                 <button 
-                  className="py-2 px-4 bg-gray-100 rounded-lg font-medium text-gray-700"
+                  className="py-2 px-4 bg-gray-100 rounded-lg font-medium text-gray-700 hover:bg-gray-200 transition-colors"
                   onClick={() => setSearchTerm('')}
                 >
                   Clear Search
@@ -197,13 +194,13 @@ const AreaList = () => {
               </>
             ) : (
               <>
-                <div className={`w-16 h-16 bg-${config.color}-100 rounded-full flex items-center justify-center mb-4 text-${config.color}-500`}>
-                  <IconComponent size={32} />
+                <div className={`w-16 h-16 bg-${getColorForType(areaType)}-100 rounded-full flex items-center justify-center mb-4 text-${getColorForType(areaType)}-500`}>
+                  {getIconForType(areaType, 32)}
                 </div>
                 <h2 className="text-lg font-semibold mb-2">No {areaType} areas added yet</h2>
                 <p className="text-gray-600 text-center mb-4">Add your first {areaType} area to begin the inspection</p>
                 <button 
-                  className={`py-2 px-4 bg-${config.color}-500 text-white rounded-lg font-medium flex items-center`}
+                  className={`py-2 px-4 bg-${getColorForType(areaType)}-500 text-white rounded-lg font-medium flex items-center hover:bg-${getColorForType(areaType)}-600 active:bg-${getColorForType(areaType)}-700 transition-colors`}
                   onClick={handleAddArea}
                 >
                   <Plus size={18} className="mr-2" /> Add First {areaType.charAt(0).toUpperCase() + areaType.slice(1)}
@@ -214,33 +211,30 @@ const AreaList = () => {
         ) : (
           <div className="space-y-3">
             {filteredAreas.map((area) => {
-              const AreaIcon = config.getItemIcon(area.type);
-              const SeverityIcon = getSeverityIcon(area);
+              const findingCount = area.findings?.length || 0;
               const severityClass = getSeverityClass(area);
               
               return (
                 <div 
                   key={area.id} 
-                  className="bg-white rounded-lg shadow-sm overflow-hidden"
+                  className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                   onClick={() => navigate(`/inspections/${id}/${areaType}/${area.id}`)}
                 >
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className={`w-10 h-10 rounded-lg bg-${config.color}-50 flex items-center justify-center mr-3 text-${config.color}-500`}>
-                        <AreaIcon size={20} />
+                      <div className={`w-10 h-10 rounded-lg bg-${getColorForType(areaType)}-50 flex items-center justify-center mr-3 text-${getColorForType(areaType)}-500`}>
+                        {getIconForType(areaType, 20)}
                       </div>
                       <div className="text-left">
                         <h3 className="font-medium">{area.name}</h3>
                         <p className="text-sm text-gray-600">
-                          {area.findings?.length || 0} finding{area.findings?.length !== 1 ? 's' : ''}
+                          {findingCount} finding{findingCount !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex items-center">
-                      <div className={`severity-icon--${severityClass}`}>
-                        <SeverityIcon size={20} />
-                      </div>
+                      {severityClass !== 'none' && getSeverityIcon(severityClass)}
                       <ChevronRight size={20} className="text-gray-400 ml-1" />
                     </div>
                   </div>
@@ -253,7 +247,7 @@ const AreaList = () => {
       
       {/* Floating Action Button */}
       <button 
-        className={`fixed bottom-20 right-4 w-14 h-14 rounded-full bg-${config.color}-500 text-white flex items-center justify-center shadow-lg`}
+        className={`fixed bottom-20 right-4 w-14 h-14 rounded-full bg-${getColorForType(areaType)}-500 text-white flex items-center justify-center shadow-lg hover:bg-${getColorForType(areaType)}-600 active:bg-${getColorForType(areaType)}-700 transition-colors`}
         onClick={handleAddArea}
         aria-label={`Add ${areaType}`}
       >
@@ -262,5 +256,99 @@ const AreaList = () => {
     </div>
   );
 };
+
+// Helper functions
+function getAreaConfig(areaType) {
+  const configs = {
+    unit: {
+      title: 'Units',
+      icon: Home,
+      color: 'blue',
+      addPath: (inspectionId) => `/inspections/${inspectionId}/units/add`,
+      quickAddOptions: [
+        { type: '101', label: '101', icon: Home },
+        { type: '102', label: '102', icon: Home },
+        { type: '201', label: '201', icon: Home },
+        { type: '202', label: '202', icon: Home }
+      ]
+    },
+    inside: {
+      title: 'Inside Areas',
+      icon: Building,
+      color: 'purple',
+      addPath: (inspectionId) => `/inspections/${inspectionId}/inside/add`,
+      quickAddOptions: [
+        { type: 'hallway', label: 'Hallway', icon: Building },
+        { type: 'laundry', label: 'Laundry', icon: Building },
+        { type: 'community', label: 'Community', icon: Building },
+        { type: 'office', label: 'Office', icon: Building }
+      ]
+    },
+    outside: {
+      title: 'Outside Areas',
+      icon: Grid,
+      color: 'green',
+      addPath: (inspectionId) => `/inspections/${inspectionId}/outside/add`,
+      quickAddOptions: [
+        { type: 'building', label: 'Building', icon: Grid },
+        { type: 'parking', label: 'Parking', icon: Grid },
+        { type: 'grounds', label: 'Grounds', icon: Grid },
+        { type: 'playground', label: 'Playground', icon: Grid }
+      ]
+    }
+  };
+  
+  return configs[areaType] || configs.unit;
+}
+
+function getColorForType(areaType) {
+  const colors = {
+    unit: 'blue',
+    inside: 'purple',
+    outside: 'green'
+  };
+  
+  return colors[areaType] || 'blue';
+}
+
+function getIconForType(areaType, size = 20) {
+  if (areaType === 'unit') return <Home size={size} />;
+  if (areaType === 'inside') return <Building size={size} />;
+  if (areaType === 'outside') return <Grid size={size} />;
+  return <Home size={size} />;
+}
+
+function getSeverityClass(area) {
+  if (!area.findings || area.findings.length === 0) {
+    return 'none';
+  }
+  
+  // Check for life-threatening findings
+  const hasLifeThreatening = area.findings.some(f => f.severity === 'lifeThreatening');
+  if (hasLifeThreatening) {
+    return 'critical';
+  }
+  
+  // Check for severe findings
+  const hasSevere = area.findings.some(f => f.severity === 'severe');
+  if (hasSevere) {
+    return 'serious';
+  }
+  
+  // Check for moderate findings
+  const hasModerate = area.findings.some(f => f.severity === 'moderate');
+  if (hasModerate) {
+    return 'moderate';
+  }
+  
+  return 'minor';
+}
+
+function getSeverityIcon(severityClass) {
+  if (severityClass === 'critical') return <AlertCircle className="text-red-500" size={20} />;
+  if (severityClass === 'serious') return <AlertTriangle className="text-orange-500" size={20} />;
+  if (severityClass === 'moderate') return <Clock className="text-yellow-500" size={20} />;
+  return <CheckCircle className="text-green-500" size={20} />;
+}
 
 export default AreaList;

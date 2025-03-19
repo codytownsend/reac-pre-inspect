@@ -15,7 +15,8 @@ import {
   Check,
   Building,
   Home,
-  Grid
+  Grid,
+  AlertCircle
 } from 'lucide-react';
 import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -281,10 +282,10 @@ const InspectionReportPage = () => {
   
   if (error) {
     return (
-      <div className="container p-4">
-        <div className="page-header flex items-center mb-4">
+      <div className="p-4">
+        <div className="flex items-center mb-4">
           <button 
-            className="btn-icon mr-2"
+            className="p-2 rounded-full hover:bg-gray-100 mr-2"
             onClick={() => navigate(`/inspections/${id}`)}
           >
             <ArrowLeft size={24} />
@@ -306,10 +307,10 @@ const InspectionReportPage = () => {
   
   if (!report) {
     return (
-      <div className="container p-4">
-        <div className="page-header flex items-center mb-4">
+      <div className="p-4">
+        <div className="flex items-center mb-4">
           <button 
-            className="btn-icon mr-2"
+            className="p-2 rounded-full hover:bg-gray-100 mr-2"
             onClick={() => navigate(`/inspections/${id}`)}
           >
             <ArrowLeft size={24} />
@@ -343,7 +344,7 @@ const InspectionReportPage = () => {
         
         <div className="flex items-center space-x-2">
           <button 
-            className="p-2 bg-gray-100 rounded-lg flex items-center text-sm font-medium" 
+            className="p-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg flex items-center text-sm font-medium" 
             onClick={handlePrint}
           >
             <Printer size={16} className="mr-1" /> Print
@@ -351,7 +352,7 @@ const InspectionReportPage = () => {
           
           <div className="relative">
             <button 
-              className="p-2 bg-gray-100 rounded-lg flex items-center text-sm font-medium"
+              className="p-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg flex items-center text-sm font-medium"
               onClick={() => setShowShareOptions(!showShareOptions)}
             >
               <Share2 size={16} className="mr-1" /> Share
@@ -378,7 +379,7 @@ const InspectionReportPage = () => {
           </div>
           
           <button 
-            className="p-2 bg-blue-500 text-white rounded-lg flex items-center text-sm font-medium"
+            className="p-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-lg flex items-center text-sm font-medium"
             onClick={() => {
               // Handle PDF download (implementation would go here)
               alert('Download PDF functionality would go here');
@@ -585,7 +586,7 @@ const InspectionReportPage = () => {
               })}
             </div>
           ) : (
-            <div className="text-center py-8">
+            <div className="bg-gray-50 p-6 text-center rounded-lg">
               <p className="text-gray-500">No areas have been added to this inspection.</p>
             </div>
           )}
