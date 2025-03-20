@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
 import { getAreaConfig, getSeverityIcon, getSeverityClass } from '../../utils/areaUtils';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { 
   Plus, 
   AlertCircle, 
@@ -47,7 +49,10 @@ const AreaDetail = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const inspectionData = getInspection(id);
+        // First, force a fresh fetch from Firestore instead of relying on the context
+        const inspectionDoc = await getDoc(doc(db, 'inspections', id));
+        const inspectionData = { id, ...inspectionDoc.data() };
+        
         if (!inspectionData) {
           navigate('/inspections');
           return;
@@ -99,6 +104,14 @@ const AreaDetail = () => {
   const handleEditFinding = (finding) => {
     setEditingFinding(finding);
     setShowAddFinding(true);
+  };
+
+  const handleBackStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    } else {
+      onCancel();
+    }
   };
 
   const handleSaveFinding = async (findingData) => {
@@ -245,7 +258,8 @@ const AreaDetail = () => {
             className="p-2 rounded-full hover:bg-gray-100 mr-2"
             onClick={() => {
               // Convert area type to correct URL path (singular to plural for unit)
-              const areaUrlPath = areaType === 'unit' ? 'units' : areaType;
+              const areaUrlPath = areaType === 'unit' ? 'units' : 
+                                  areaType === 'inside' ? 'inside' : 'outside';
               navigate(`/inspections/${id}/${areaUrlPath}`);
             }}
           >
