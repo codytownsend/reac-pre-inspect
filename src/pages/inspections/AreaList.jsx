@@ -13,20 +13,23 @@ import {
   Clock,
   Home,
   Building,
-  Grid
+  Grid,
+  Trash2
 } from 'lucide-react';
 
 const AreaList = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { getInspection } = useInspection();
+  const { getInspection, updateInspection } = useInspection();
   
   const [inspection, setInspection] = useState(null);
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [areaToDelete, setAreaToDelete] = useState(null);
   
   // Determine area type from URL path
   const areaType = location.pathname.includes('/units') 
@@ -72,7 +75,38 @@ const AreaList = () => {
   );
   
   const handleAddArea = () => {
-    navigate(`/inspections/${id}/${areaType}/add`);
+    // This corrects the URL path to use the plural form for the route
+    const urlPathType = areaType === 'unit' ? 'units' : 
+                      areaType === 'inside' ? 'inside' : 'outside';
+    navigate(`/inspections/${id}/${urlPathType}/add`);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!areaToDelete) return;
+    
+    try {
+      // Remove the area from the inspection
+      const updatedAreas = inspection.areas.filter(area => area.id !== areaToDelete.id);
+      
+      // Update inspection in Firestore
+      await updateInspection(id, { areas: updatedAreas });
+      
+      // Update local state
+      setAreas(areas.filter(area => area.id !== areaToDelete.id));
+      
+      // Reset
+      setAreaToDelete(null);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error("Error deleting area:", error);
+      setError('Failed to delete area');
+    }
+  };
+  
+  const promptDeleteArea = (e, area) => {
+    e.stopPropagation(); // Prevent navigation to area details
+    setAreaToDelete(area);
+    setShowDeleteConfirm(true);
   };
   
   if (loading) {
@@ -133,30 +167,6 @@ const AreaList = () => {
         <div className="mx-4 mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
           <AlertCircle size={20} className="mr-2 flex-shrink-0" />
           <span>{error}</span>
-        </div>
-      )}
-      
-      {/* Quick Add Section */}
-      {areas.length > 0 && (
-        <div className="p-4 bg-white border-b">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Add</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {config.quickAddOptions.map(item => {
-              const ItemIcon = item.icon;
-              return (
-                <button 
-                  key={item.type}
-                  className="flex flex-col items-center p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors"
-                  onClick={() => navigate(`${config.addPath(id)}?type=${item.type}`)}
-                >
-                  <div className={`text-${getColorForType(areaType)}-500 mb-1`}>
-                    <ItemIcon size={20} />
-                  </div>
-                  <span className="text-xs">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
         </div>
       )}
       
@@ -234,8 +244,13 @@ const AreaList = () => {
                     </div>
                     
                     <div className="flex items-center">
-                      {severityClass !== 'none' && getSeverityIcon(severityClass)}
-                      <ChevronRight size={20} className="text-gray-400 ml-1" />
+                      <button 
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors mr-1"
+                        onClick={(e) => promptDeleteArea(e, area)}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                      <ChevronRight size={20} className="text-gray-400" />
                     </div>
                   </div>
                 </div>
@@ -253,6 +268,39 @@ const AreaList = () => {
       >
         <Plus size={24} />
       </button>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && areaToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full overflow-hidden">
+            <div className="p-4 border-b">
+              <h3 className="font-semibold text-lg">Delete {areaType.charAt(0).toUpperCase() + areaType.slice(1)}?</h3>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-700">
+                Are you sure you want to delete "{areaToDelete.name}"? All findings associated with this {areaType} will be permanently deleted.
+              </p>
+            </div>
+            <div className="flex flex-col p-4 border-t space-y-2">
+              <button 
+                className="w-full py-2 bg-red-500 text-white rounded-lg font-medium"
+                onClick={handleConfirmDelete}
+              >
+                Delete {areaType.charAt(0).toUpperCase() + areaType.slice(1)}
+              </button>
+              <button 
+                className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium"
+                onClick={() => {
+                  setAreaToDelete(null);
+                  setShowDeleteConfirm(false);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -342,13 +390,6 @@ function getSeverityClass(area) {
   }
   
   return 'minor';
-}
-
-function getSeverityIcon(severityClass) {
-  if (severityClass === 'critical') return <AlertCircle className="text-red-500" size={20} />;
-  if (severityClass === 'serious') return <AlertTriangle className="text-orange-500" size={20} />;
-  if (severityClass === 'moderate') return <Clock className="text-yellow-500" size={20} />;
-  return <CheckCircle className="text-green-500" size={20} />;
 }
 
 export default AreaList;

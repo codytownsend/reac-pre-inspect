@@ -243,7 +243,11 @@ const AreaDetail = () => {
         <div className="flex items-center">
           <button
             className="p-2 rounded-full hover:bg-gray-100 mr-2"
-            onClick={() => navigate(`/inspections/${id}/${areaType}`)}
+            onClick={() => {
+              // Convert area type to correct URL path (singular to plural for unit)
+              const areaUrlPath = areaType === 'unit' ? 'units' : areaType;
+              navigate(`/inspections/${id}/${areaUrlPath}`);
+            }}
           >
             <ArrowLeft size={20} />
           </button>

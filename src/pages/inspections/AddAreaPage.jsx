@@ -66,10 +66,10 @@ const AddAreaPage = () => {
         { id: 'elevator', name: 'Elevator', icon: Building },
       ],
       areaTypes: [
-        { id: 'hallway', name: 'Hallway/Corridor', icon: DoorOpen },
+        { id: 'hallway', name: 'Hallway / Corridor', icon: DoorOpen },
         { id: 'laundry', name: 'Laundry Room', icon: Wrench },
         { id: 'community', name: 'Community Room', icon: Users },
-        { id: 'office', name: 'Office/Admin Area', icon: Coffee },
+        { id: 'office', name: 'Office / Admin Area', icon: Coffee },
         { id: 'mechanical', name: 'Mechanical Room', icon: Wrench },
         { id: 'storage', name: 'Storage Area', icon: Building },
         { id: 'stairwell', name: 'Stairwell', icon: Building },
@@ -83,20 +83,13 @@ const AddAreaPage = () => {
       color: 'green',
       backPath: `/inspections/${id}/outside`,
       description: 'Select the type of outside area you want to inspect.',
-      quickAdd: [
-        { id: 'building', name: 'Building Exterior', icon: Home },
-        { id: 'parking', name: 'Parking Lot', icon: ParkingSquare },
-        { id: 'grounds', name: 'Grounds', icon: TreePine },
-        { id: 'playground', name: 'Playground', icon: Wind },
-        { id: 'trash', name: 'Trash Area', icon: Grid },
-      ],
       areaTypes: [
         { id: 'building', name: 'Building Exterior', icon: Home },
         { id: 'parking', name: 'Parking Lot', icon: ParkingSquare },
-        { id: 'grounds', name: 'Grounds/Landscaping', icon: TreePine },
+        { id: 'grounds', name: 'Grounds / Landscaping', icon: TreePine },
         { id: 'playground', name: 'Playground', icon: Wind },
-        { id: 'walkway', name: 'Walkway/Path', icon: Grid },
-        { id: 'fence', name: 'Fence/Gate', icon: Grid },
+        { id: 'walkway', name: 'Walkway / Path', icon: Grid },
+        { id: 'fence', name: 'Fence / Gate', icon: Grid },
         { id: 'roof', name: 'Roof', icon: Home },
         { id: 'trash', name: 'Trash Area', icon: Grid },
         { id: 'other', name: 'Other Outside Area', icon: Grid }
@@ -184,15 +177,19 @@ const AddAreaPage = () => {
         }
       }
       
-      // Create a new area
-      const newArea = {
-        id: `${areaCategoryType}-${Date.now()}`,
+      // Create a new area - without undefined values
+      let newArea = {
+        id: `area-${Date.now()}`,
         name: finalAreaName,
         areaType: areaCategoryType,
-        type: areaType || undefined,
         findings: [],
         createdAt: new Date().toISOString()
       };
+      
+      // Only add type if it has a value
+      if (areaType) {
+        newArea.type = areaType;
+      }
       
       // Update the inspection with the new area
       const updatedAreas = [...(inspection.areas || []), newArea];
@@ -202,11 +199,14 @@ const AddAreaPage = () => {
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
       
-      // Navigate to the new area
-      navigate(`/inspections/${id}/${areaCategoryType}/${newArea.id}`);
+      // Navigate to the new area - using the correct plural form for the URL
+      const urlPathType = areaCategoryType === 'unit' ? 'units' : areaCategoryType;
+      setTimeout(() => {
+        navigate(`/inspections/${id}/${urlPathType}/${newArea.id}`);
+      }, 100);
     } catch (error) {
       console.error("Error saving area:", error);
-      setError('Error saving area');
+      setError('Error saving area: ' + (error.message || ''));
       setSaving(false);
     }
   };
@@ -307,32 +307,6 @@ const AddAreaPage = () => {
           </div>
         </div>
       </div>
-      
-      {/* Quick Add Section - ONLY for inside/outside areas */}
-      {areaCategoryType !== 'unit' && config[areaCategoryType].quickAdd && (
-        <div className="p-4">
-          <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Add</h3>
-            <div className="flex overflow-x-auto gap-3 pb-2">
-              {config[areaCategoryType].quickAdd.map((item) => {
-                const QuickIcon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    className={`flex flex-col items-center justify-center p-3 rounded-lg border border-gray-200 min-w-20 flex-shrink-0 hover:bg-${config[areaCategoryType].color}-50 hover:border-${config[areaCategoryType].color}-200 transition-colors`}
-                    onClick={() => handleQuickAdd(item.id, item.name)}
-                  >
-                    <div className={`bg-${config[areaCategoryType].color}-100 p-2 rounded-full mb-2`}>
-                      <QuickIcon size={20} className={`text-${config[areaCategoryType].color}-500`} />
-                    </div>
-                    <span className="text-sm whitespace-nowrap">{item.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* For units, show the unit name input ONLY */}
       {areaCategoryType === 'unit' && (

@@ -104,10 +104,13 @@ const FindingForm = ({
     setCurrentStep(3);
   };
   
+  // Modified to handle the back navigation properly
   const handleBackStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
+      // Convert areaType to proper URL format for navigation
+      const areaUrlPath = areaType === 'unit' ? 'units' : areaType;
       onCancel();
     }
   };
