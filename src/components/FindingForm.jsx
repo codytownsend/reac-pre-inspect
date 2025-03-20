@@ -109,8 +109,7 @@ const FindingForm = ({
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
-      // Convert areaType to proper URL format for navigation
-      const areaUrlPath = areaType === 'unit' ? 'units' : areaType;
+      // Just cancel without trying to navigate
       onCancel();
     }
   };

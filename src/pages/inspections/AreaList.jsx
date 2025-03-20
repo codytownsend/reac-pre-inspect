@@ -3,6 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
 import { 
+  getAreaTypeFromUrlPath,
+  getAreaUrlPath,
+  getAreaConfig, 
+  getSeverityClass 
+} from '../../utils/areaUtils';
+import { 
   Plus, 
   AlertCircle, 
   ChevronRight,
@@ -31,12 +37,10 @@ const AreaList = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [areaToDelete, setAreaToDelete] = useState(null);
   
-  // Determine area type from URL path
-  const areaType = location.pathname.includes('/units') 
-    ? 'unit' 
-    : location.pathname.includes('/inside') 
-      ? 'inside' 
-      : 'outside';
+  // Determine area type from URL path using utility function
+  const areaUrlPath = location.pathname.includes('/units/') ? 'units' : 
+                    location.pathname.includes('/inside/') ? 'inside' : 'outside';
+  const areaType = getAreaTypeFromUrlPath(areaUrlPath);
   
   // Get configuration for this area type
   const config = getAreaConfig(areaType);
@@ -52,7 +56,7 @@ const AreaList = () => {
         
         setInspection(inspectionData);
         
-        // Filter areas by type
+        // Filter areas by correct type
         const filteredAreas = inspectionData.areas 
           ? inspectionData.areas.filter(area => area.areaType === areaType)
           : [];
@@ -60,7 +64,7 @@ const AreaList = () => {
         setAreas(filteredAreas);
       } catch (error) {
         console.error(`Error loading ${areaType} areas:`, error);
-        setError(`Error loading ${areaType} areas`);
+        setError(`Error loading ${areaType} areas: ${error.message || ''}`);
       } finally {
         setLoading(false);
       }
@@ -75,9 +79,8 @@ const AreaList = () => {
   );
   
   const handleAddArea = () => {
-    // This corrects the URL path to use the plural form for the route
-    const urlPathType = areaType === 'unit' ? 'units' : 
-                      areaType === 'inside' ? 'inside' : 'outside';
+    // Use utility function to get the correct URL path
+    const urlPathType = getAreaUrlPath(areaType);
     navigate(`/inspections/${id}/${urlPathType}/add`);
   };
 
@@ -91,15 +94,21 @@ const AreaList = () => {
       // Update inspection in Firestore
       await updateInspection(id, { areas: updatedAreas });
       
-      // Update local state
+      // Update inspection local state too
+      setInspection({
+        ...inspection,
+        areas: updatedAreas
+      });
+      
+      // Update areas list state
       setAreas(areas.filter(area => area.id !== areaToDelete.id));
       
-      // Reset
+      // Reset deletion state
       setAreaToDelete(null);
       setShowDeleteConfirm(false);
     } catch (error) {
       console.error("Error deleting area:", error);
-      setError('Failed to delete area');
+      setError('Failed to delete area: ' + (error.message || ''));
     }
   };
   
@@ -228,7 +237,7 @@ const AreaList = () => {
                 <div 
                   key={area.id} 
                   className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-                  onClick={() => navigate(`/inspections/${id}/${areaType}/${area.id}`)}
+                  onClick={() => navigate(`/inspections/${id}/${areaUrlPath}/${area.id}`)}
                 >
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center">
@@ -306,49 +315,6 @@ const AreaList = () => {
 };
 
 // Helper functions
-function getAreaConfig(areaType) {
-  const configs = {
-    unit: {
-      title: 'Units',
-      icon: Home,
-      color: 'blue',
-      addPath: (inspectionId) => `/inspections/${inspectionId}/units/add`,
-      quickAddOptions: [
-        { type: '101', label: '101', icon: Home },
-        { type: '102', label: '102', icon: Home },
-        { type: '201', label: '201', icon: Home },
-        { type: '202', label: '202', icon: Home }
-      ]
-    },
-    inside: {
-      title: 'Inside Areas',
-      icon: Building,
-      color: 'purple',
-      addPath: (inspectionId) => `/inspections/${inspectionId}/inside/add`,
-      quickAddOptions: [
-        { type: 'hallway', label: 'Hallway', icon: Building },
-        { type: 'laundry', label: 'Laundry', icon: Building },
-        { type: 'community', label: 'Community', icon: Building },
-        { type: 'office', label: 'Office', icon: Building }
-      ]
-    },
-    outside: {
-      title: 'Outside Areas',
-      icon: Grid,
-      color: 'green',
-      addPath: (inspectionId) => `/inspections/${inspectionId}/outside/add`,
-      quickAddOptions: [
-        { type: 'building', label: 'Building', icon: Grid },
-        { type: 'parking', label: 'Parking', icon: Grid },
-        { type: 'grounds', label: 'Grounds', icon: Grid },
-        { type: 'playground', label: 'Playground', icon: Grid }
-      ]
-    }
-  };
-  
-  return configs[areaType] || configs.unit;
-}
-
 function getColorForType(areaType) {
   const colors = {
     unit: 'blue',
@@ -364,32 +330,6 @@ function getIconForType(areaType, size = 20) {
   if (areaType === 'inside') return <Building size={size} />;
   if (areaType === 'outside') return <Grid size={size} />;
   return <Home size={size} />;
-}
-
-function getSeverityClass(area) {
-  if (!area.findings || area.findings.length === 0) {
-    return 'none';
-  }
-  
-  // Check for life-threatening findings
-  const hasLifeThreatening = area.findings.some(f => f.severity === 'lifeThreatening');
-  if (hasLifeThreatening) {
-    return 'critical';
-  }
-  
-  // Check for severe findings
-  const hasSevere = area.findings.some(f => f.severity === 'severe');
-  if (hasSevere) {
-    return 'serious';
-  }
-  
-  // Check for moderate findings
-  const hasModerate = area.findings.some(f => f.severity === 'moderate');
-  if (hasModerate) {
-    return 'moderate';
-  }
-  
-  return 'minor';
 }
 
 export default AreaList;

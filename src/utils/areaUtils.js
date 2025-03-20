@@ -1,4 +1,3 @@
-// src/utils/areaUtils.js - Enhanced version
 import React from 'react';
 import { 
   Home, 
@@ -284,4 +283,24 @@ export const getAreaCount = (inspection, areaType) => {
   if (!inspection || !inspection.areas) return 0;
   
   return inspection.areas.filter(area => area.areaType === areaType).length;
+};
+
+/**
+ * Converts an area type to a consistent URL path
+ * @param {string} areaType - The area type ('unit', 'inside', or 'outside')
+ * @returns {string} - The URL path segment to use
+ */
+export const getAreaUrlPath = (areaType) => {
+  if (areaType === 'unit') return 'units';
+  return areaType; // 'inside' and 'outside' remain the same
+};
+
+/**
+ * Gets the area type from a URL path segment
+ * @param {string} urlPath - The URL path segment ('units', 'inside', or 'outside')
+ * @returns {string} - The area type to use in data
+ */
+export const getAreaTypeFromUrlPath = (urlPath) => {
+  if (urlPath === 'units') return 'unit';
+  return urlPath; // 'inside' and 'outside' remain the same
 };

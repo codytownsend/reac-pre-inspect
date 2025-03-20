@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
+import { getAreaUrlPath } from '../../utils/areaUtils';
 import { 
   Home, 
   Building, 
@@ -112,7 +113,7 @@ const AddAreaPage = () => {
         }
       }
     }
-  }, [location.search, areaCategoryType, config]);
+  }, [location.search, areaCategoryType]);
   
   useEffect(() => {
     const loadData = async () => {
@@ -126,7 +127,7 @@ const AddAreaPage = () => {
         setInspection(inspectionData);
       } catch (error) {
         console.error("Error loading inspection:", error);
-        setError('Error loading inspection details');
+        setError('Error loading inspection details: ' + (error.message || ''));
       } finally {
         setLoading(false);
       }
@@ -177,7 +178,7 @@ const AddAreaPage = () => {
         }
       }
       
-      // Create a new area - without undefined values
+      // Create a new area
       let newArea = {
         id: `area-${Date.now()}`,
         name: finalAreaName,
@@ -195,15 +196,20 @@ const AddAreaPage = () => {
       const updatedAreas = [...(inspection.areas || []), newArea];
       await updateInspection(id, { areas: updatedAreas });
       
+      // Update local state too
+      setInspection({
+        ...inspection,
+        areas: updatedAreas
+      });
+      
       // Show success toast
       setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
       
-      // Navigate to the new area - using the correct plural form for the URL
-      const urlPathType = areaCategoryType === 'unit' ? 'units' : areaCategoryType;
+      // Navigate to the new area after a short delay
+      const urlPathType = getAreaUrlPath(areaCategoryType);
       setTimeout(() => {
         navigate(`/inspections/${id}/${urlPathType}/${newArea.id}`);
-      }, 100);
+      }, 300); // Slightly longer delay to ensure state updates
     } catch (error) {
       console.error("Error saving area:", error);
       setError('Error saving area: ' + (error.message || ''));

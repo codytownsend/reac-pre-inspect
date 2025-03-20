@@ -2,7 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
-import { getAreaConfig, getSeverityIcon, getSeverityClass } from '../../utils/areaUtils';
+import { 
+  getAreaConfig, 
+  getSeverityIcon, 
+  getSeverityClass, 
+  getAreaUrlPath 
+} from '../../utils/areaUtils';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { 
@@ -51,13 +56,13 @@ const AreaDetail = () => {
       try {
         // First, force a fresh fetch from Firestore instead of relying on the context
         const inspectionDoc = await getDoc(doc(db, 'inspections', id));
-        const inspectionData = { id, ...inspectionDoc.data() };
-        
-        if (!inspectionData) {
-          navigate('/inspections');
+        if (!inspectionDoc.exists()) {
+          setError('Inspection not found');
+          setLoading(false);
           return;
         }
         
+        const inspectionData = { id, ...inspectionDoc.data() };
         setInspection(inspectionData);
         
         // Find area in inspection
@@ -71,7 +76,7 @@ const AreaDetail = () => {
         setArea(areaData);
       } catch (error) {
         console.error("Error loading area details:", error);
-        setError('Error loading area details');
+        setError('Error loading area details: ' + (error.message || ''));
       } finally {
         setLoading(false);
       }
@@ -88,11 +93,12 @@ const AreaDetail = () => {
       // Update inspection in Firestore
       await updateInspection(id, { areas: updatedAreas });
       
-      // Navigate back to the areas list
-      navigate(`/inspections/${id}/${areaType}`);
+      // Navigate back to the areas list - using consistent URL path
+      const urlPath = getAreaUrlPath(areaType);
+      navigate(`/inspections/${id}/${urlPath}`);
     } catch (error) {
       console.error("Error deleting area:", error);
-      setError('Failed to delete area');
+      setError('Failed to delete area: ' + (error.message || ''));
     }
   };
 
@@ -106,14 +112,6 @@ const AreaDetail = () => {
     setShowAddFinding(true);
   };
 
-  const handleBackStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    } else {
-      onCancel();
-    }
-  };
-
   const handleSaveFinding = async (findingData) => {
     try {
       let updatedAreas = [...inspection.areas];
@@ -125,7 +123,7 @@ const AreaDetail = () => {
       
       // If editing an existing finding
       if (editingFinding) {
-        const findingIndex = updatedAreas[areaIndex].findings.findIndex(f => f.id === findingData.id);
+        const findingIndex = updatedAreas[areaIndex].findings?.findIndex(f => f.id === findingData.id);
         
         if (findingIndex >= 0) {
           // Update the finding
@@ -157,7 +155,7 @@ const AreaDetail = () => {
       
     } catch (error) {
       console.error("Error saving finding:", error);
-      setError("Error saving finding");
+      setError("Error saving finding: " + (error.message || ''));
     }
   };
 
@@ -191,7 +189,7 @@ const AreaDetail = () => {
       
     } catch (error) {
       console.error("Error deleting finding:", error);
-      setError("Error deleting finding");
+      setError("Error deleting finding: " + (error.message || ''));
     }
   };
 
@@ -257,10 +255,9 @@ const AreaDetail = () => {
           <button
             className="p-2 rounded-full hover:bg-gray-100 mr-2"
             onClick={() => {
-              // Convert area type to correct URL path (singular to plural for unit)
-              const areaUrlPath = areaType === 'unit' ? 'units' : 
-                                  areaType === 'inside' ? 'inside' : 'outside';
-              navigate(`/inspections/${id}/${areaUrlPath}`);
+              // Use the utility function for consistent URL paths
+              const urlPath = getAreaUrlPath(areaType);
+              navigate(`/inspections/${id}/${urlPath}`);
             }}
           >
             <ArrowLeft size={20} />
@@ -291,7 +288,9 @@ const AreaDetail = () => {
               className="w-full py-3 px-4 text-left hover:bg-gray-100 flex items-center"
               onClick={() => {
                 setShowActionsMenu(false);
-                navigate(`/inspections/${id}/${areaType}/${areaId}/edit`);
+                // Use the correct URL path for area type
+                const urlPath = getAreaUrlPath(areaType);
+                navigate(`/inspections/${id}/${urlPath}/${areaId}/edit`);
               }}
             >
               <Edit size={16} className="mr-2" />
