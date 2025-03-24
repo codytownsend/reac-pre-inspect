@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, X, Check, RefreshCw, Image } from 'lucide-react';
+import { Camera, X, Check, RefreshCw, Image, AlertCircle } from 'lucide-react';
 
 const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
   const [capturedImage, setCapturedImage] = useState(null);
@@ -13,46 +13,49 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
   
   // Initialize camera when component mounts
   useEffect(() => {
-    let timeoutId;
+    let isMounted = true; // Track if component is mounted
     
     const initCamera = async () => {
-      setLoading(true);
-      setError(null);
-      
-      // Set a timeout to prevent indefinite loading state
-      timeoutId = setTimeout(() => {
-        if (loading) {
-          setError("Camera initialization timed out. Please try again.");
-          setLoading(false);
-        }
-      }, 10000);
-      
       try {
-        // Request camera access
+        setLoading(true);
+        setError(null);
+        
+        // Request camera access with simple options first
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
+          video: true,
           audio: false
         });
         
-        // Set the stream to state
+        // Make sure component is still mounted before updating state
+        if (!isMounted) return;
+        
         setStream(mediaStream);
         
         // Connect stream to video element
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
           
-          // Listen for video to be ready
-          videoRef.current.onloadeddata = () => {
-            setLoading(false);
-            clearTimeout(timeoutId);
+          // Set a specific handler for when video can play
+          videoRef.current.oncanplay = () => {
+            if (isMounted) {
+              console.log("Video is ready to play");
+              setLoading(false);
+            }
           };
+          
+          // Important: manually call play to start the video
+          videoRef.current.play().catch(err => {
+            console.error("Error playing video:", err);
+            if (isMounted) {
+              setError("Could not start camera preview");
+              setLoading(false);
+            }
+          });
         }
       } catch (err) {
         console.error("Camera access error:", err);
+        if (!isMounted) return;
+        
         let errorMessage = "Could not access camera";
         
         if (err.name === 'NotAllowedError') {
@@ -61,13 +64,10 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
           errorMessage = "No camera found on your device";
         } else if (err.name === 'NotReadableError') {
           errorMessage = "Camera is in use by another application";
-        } else if (err.name === 'AbortError' || err.name === 'SecurityError') {
-          errorMessage = "Camera access blocked by browser";
         }
         
-        setError(`${errorMessage}`);
+        setError(errorMessage);
         setLoading(false);
-        clearTimeout(timeoutId);
       }
     };
     
@@ -75,7 +75,7 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
     
     // Clean up on unmount
     return () => {
-      clearTimeout(timeoutId);
+      isMounted = false;
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
@@ -126,17 +126,9 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
     // Clean up existing stream first
     stopCamera();
     
-    // Reset state
-    setLoading(true);
-    setError(null);
-    
     // Start new camera stream
     navigator.mediaDevices.getUserMedia({
-      video: { 
-        facingMode: 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      },
+      video: true,
       audio: false
     })
     .then(mediaStream => {
@@ -144,9 +136,14 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadeddata = () => {
+        videoRef.current.oncanplay = () => {
           setLoading(false);
         };
+        videoRef.current.play().catch(err => {
+          console.error("Error playing video:", err);
+          setError("Could not start camera preview");
+          setLoading(false);
+        });
       }
     })
     .catch(err => {
@@ -159,6 +156,8 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
   // Retake photo (go back to camera)
   const handleRetake = () => {
     setCapturedImage(null);
+    setLoading(true);
+    setError(null);
     retryCamera();
   };
   
@@ -219,7 +218,7 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
               // Error state
               <div className="text-white p-6 text-center max-w-md">
                 <div className="bg-red-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <X size={32} />
+                  <AlertCircle size={32} />
                 </div>
                 <p className="mb-8">{error}</p>
                 <div className="flex flex-col gap-4">

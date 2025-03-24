@@ -28,37 +28,6 @@ import {
  * @param {Function} props.onCancel - Callback when form is canceled
  * @param {Function} props.onDelete - Callback for deleting a finding (only used in edit mode)
  */
-
-const getAutomaticSeverity = (category, subcategory) => {
-  // Check if we have deficiency data for this category/subcategory
-  const matchingDeficiencies = Object.entries(nspireDeficiencies)
-    .filter(([_, deficiency]) => 
-      deficiency.category === category && 
-      deficiency.subcategory === subcategory
-    );
-  
-  if (matchingDeficiencies.length > 0) {
-    // Use the first matching deficiency's severity
-    return matchingDeficiencies[0][1].severity;
-  }
-  
-  // Default severities by category
-  const defaultSeverities = {
-    'fire_life_safety': 'lifeThreatening',
-    'site': 'moderate',
-    'buildingExterior': 'moderate',
-    'buildingSystems': 'severe',
-    'commonAreas': 'moderate',
-    'unit': 'moderate',
-    'electrical': 'severe',
-    'bathroom': 'moderate',
-    'kitchen': 'moderate'
-  };
-  
-  return defaultSeverities[category] || 'moderate';
-};
-
-
 const FindingForm = ({ 
   inspectionId, 
   areaId, 
@@ -68,7 +37,7 @@ const FindingForm = ({
   onCancel,
   onDelete = null
 }) => {
-  const { nspireCategories } = useInspection();
+  const { nspireCategories, nspireDeficiencies } = useInspection();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
@@ -96,6 +65,40 @@ const FindingForm = ({
   };
   
   const themeColor = getAreaThemeColor();
+  
+  // Helper function to determine automatic severity based on category/subcategory
+  // Now defined within the component to access nspireDeficiencies
+  const getAutomaticSeverity = (category, subcategory) => {
+    // First check if nspireDeficiencies is available
+    if (nspireDeficiencies) {
+      // Check if we have deficiency data for this category/subcategory
+      const matchingDeficiencies = Object.entries(nspireDeficiencies)
+        .filter(([_, deficiency]) => 
+          deficiency.category === category && 
+          deficiency.subcategory === subcategory
+        );
+      
+      if (matchingDeficiencies.length > 0) {
+        // Use the first matching deficiency's severity
+        return matchingDeficiencies[0][1].severity;
+      }
+    }
+    
+    // Default severities by category
+    const defaultSeverities = {
+      'fire_life_safety': 'lifeThreatening',
+      'site': 'moderate',
+      'buildingExterior': 'moderate',
+      'buildingSystems': 'severe',
+      'commonAreas': 'moderate',
+      'unit': 'moderate',
+      'electrical': 'severe',
+      'bathroom': 'moderate',
+      'kitchen': 'moderate'
+    };
+    
+    return defaultSeverities[category] || 'moderate';
+  };
   
   // Filter categories based on area type
   const getFilteredCategories = () => {
@@ -407,7 +410,7 @@ const FindingForm = ({
             ></textarea>
           </div>
 
-{/* Photos */}
+          {/* Photos */}
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
