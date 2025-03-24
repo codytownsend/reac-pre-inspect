@@ -41,12 +41,18 @@ const AreaDetail = () => {
   const [showAddFinding, setShowAddFinding] = useState(false);
   const [editingFinding, setEditingFinding] = useState(null);
   
-  // Determine area type from URL path
-  const areaType = location.pathname.includes('/units/') 
-    ? 'unit' 
-    : location.pathname.includes('/inside/') 
-      ? 'inside' 
-      : 'outside';
+  // Determine area type from URL path - clearer implementation
+  let areaType;
+  if (location.pathname.includes('/units/')) {
+    areaType = 'unit';
+  } else if (location.pathname.includes('/inside/')) {
+    areaType = 'inside';
+  } else if (location.pathname.includes('/outside/')) {
+    areaType = 'outside';
+  } else {
+    // Default fallback
+    areaType = 'unit';
+  }
   
   // Get configuration for this area type
   const config = getAreaConfig(areaType);
@@ -94,6 +100,7 @@ const AreaDetail = () => {
       await updateInspection(id, { areas: updatedAreas });
       
       // Navigate back to the areas list - using consistent URL path
+      // Get the correct URL path for this area type
       const urlPath = getAreaUrlPath(areaType);
       navigate(`/inspections/${id}/${urlPath}`);
     } catch (error) {
@@ -247,6 +254,9 @@ const AreaDetail = () => {
   // Create IconComponent from config
   const IconComponent = config.icon;
 
+  // Get the URL path for this area type (for navigation)
+  const areaUrlPath = getAreaUrlPath(areaType);
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* App Bar */}
@@ -255,9 +265,8 @@ const AreaDetail = () => {
           <button
             className="p-2 rounded-full hover:bg-gray-100 mr-2"
             onClick={() => {
-              // Use the utility function for consistent URL paths
-              const urlPath = getAreaUrlPath(areaType);
-              navigate(`/inspections/${id}/${urlPath}`);
+              // Use the correct URL path for navigation back to area list
+              navigate(`/inspections/${id}/${areaUrlPath}`);
             }}
           >
             <ArrowLeft size={20} />
@@ -289,8 +298,7 @@ const AreaDetail = () => {
               onClick={() => {
                 setShowActionsMenu(false);
                 // Use the correct URL path for area type
-                const urlPath = getAreaUrlPath(areaType);
-                navigate(`/inspections/${id}/${urlPath}/${areaId}/edit`);
+                navigate(`/inspections/${id}/${areaUrlPath}/${areaId}/edit`);
               }}
             >
               <Edit size={16} className="mr-2" />

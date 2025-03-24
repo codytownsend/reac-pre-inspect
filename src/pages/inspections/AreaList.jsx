@@ -37,9 +37,20 @@ const AreaList = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [areaToDelete, setAreaToDelete] = useState(null);
   
-  // Determine area type from URL path using utility function
-  const areaUrlPath = location.pathname.includes('/units/') ? 'units' : 
-                    location.pathname.includes('/inside/') ? 'inside' : 'outside';
+  // Determine area type from URL path - improved and more explicit
+  let areaUrlPath;
+  if (location.pathname.includes('/units/')) {
+    areaUrlPath = 'units';
+  } else if (location.pathname.includes('/inside/')) {
+    areaUrlPath = 'inside';
+  } else if (location.pathname.includes('/outside/')) {
+    areaUrlPath = 'outside';
+  } else {
+    // Default fallback
+    areaUrlPath = 'units';
+  }
+  
+  // Convert URL path to area type using utility function
   const areaType = getAreaTypeFromUrlPath(areaUrlPath);
   
   // Get configuration for this area type
