@@ -29,6 +29,7 @@ body {
 
 .container {
   padding: 16px;
+  max-width: 100%;
 }
 
 /* Typography */
@@ -755,6 +756,7 @@ h3 {
   padding: 16px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
+  align-items: center;
 }
 
 .settings-item:last-child {
@@ -1234,11 +1236,13 @@ h3 {
 
 .auth-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .logo-container {
-  margin-bottom: 24px;
+  justify-content: center;
+  display: flex;
+  margin-bottom: 12px;
 }
 
 .logo {
@@ -1677,11 +1681,7 @@ h3 {
 
   .quick-actions,
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .action-card:last-child {
-    grid-column: span 2;
+    grid-template-columns: repeat(1, 1fr);
   }
 }
 

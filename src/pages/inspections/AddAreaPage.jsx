@@ -37,11 +37,12 @@ const AddAreaPage = () => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   
   // Determine area category type from URL path
-  const areaCategoryType = location.pathname.includes('/units/') 
-    ? 'unit' 
-    : location.pathname.includes('/inside/') 
-      ? 'inside' 
-      : 'outside';
+  const pathname = location.pathname;
+  const areaCategoryType = pathname.includes('/inside') 
+    ? 'inside' 
+    : pathname.includes('/outside') 
+      ? 'outside' 
+      : 'unit';
   
   // Configuration based on area category type
   const config = {

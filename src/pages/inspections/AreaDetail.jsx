@@ -43,14 +43,13 @@ const AreaDetail = () => {
   
   // Determine area type from URL path - clearer implementation
   let areaType;
-  if (location.pathname.includes('/units/')) {
-    areaType = 'unit';
-  } else if (location.pathname.includes('/inside/')) {
+  const pathname = location.pathname;
+  if (pathname.includes('/inside')) {
     areaType = 'inside';
-  } else if (location.pathname.includes('/outside/')) {
+  } else if (pathname.includes('/outside')) {
     areaType = 'outside';
   } else {
-    // Default fallback
+    // Default to unit for any other path
     areaType = 'unit';
   }
   

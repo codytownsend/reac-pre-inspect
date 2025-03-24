@@ -1,9 +1,9 @@
-// src/pages/shared/SharedReport.jsx
+// src/pages/shared/SharedReport.jsx - Updated for desktop view
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { ChevronDown, X, Printer, Download, Mail, Building, Home } from 'lucide-react';
+import { ChevronDown, X, Printer, Download, Mail, Building, Home, Grid, AlertCircle } from 'lucide-react';
 
 const SharedReport = () => {
   const { id } = useParams();
@@ -106,78 +106,98 @@ const SharedReport = () => {
     window.print();
   };
   
-  // Get severity label
-  const getSeverityLabel = (level) => {
-    switch (level) {
-      case 1: return "Level 1 - Minor";
-      case 2: return "Level 2 - Major";
-      case 3: return "Level 3 - Severe/Life-Threatening";
-      default: return "Unknown";
-    }
-  };
-  
-  // Get severity color
-  const getSeverityColor = (level) => {
-    switch (level) {
-      case 1: return "#cce5ff"; // Light blue
-      case 2: return "#fff3cd"; // Light yellow
-      case 3: return "#f8d7da"; // Light red
-      default: return "#e9ecef"; // Light gray
-    }
-  };
-  
-  // Get severity text color
-  const getSeverityTextColor = (level) => {
-    switch (level) {
-      case 1: return "#004085"; // Dark blue
-      case 2: return "#856404"; // Dark yellow
-      case 3: return "#721c24"; // Dark red
-      default: return "#495057"; // Dark gray
-    }
-  };
-  
-  // Calculate NSPIRE score
+  // Calculate NSPIRE score - Improved to correctly calculate based on findings
   const calculateScore = (inspection) => {
-    // If using new structure (areas)
-    if (inspection.areas && inspection.areas.length > 0) {
-      // Count all findings across all areas
-      const allFindings = inspection.areas.flatMap(area => area.findings || []);
-      
-      if (allFindings.length === 0) {
-        return 100;
-      }
-      
-      // Level 1: -1 point, Level 2: -3 points, Level 3: -5 points
-      const deductions = allFindings.reduce((total, finding) => {
-        switch (finding.severity) {
-          case 1: return total + 1;
-          case 2: return total + 3;
-          case 3: return total + 5;
-          default: return total;
-        }
-      }, 0);
-      
-      // Maximum possible score is 100
-      return Math.max(0, 100 - deductions);
-    } 
+    let totalDeductions = 0;
+    let totalFindings = 0;
     
-    // Using old structure (findings directly on inspection)
-    if (!inspection.findings || inspection.findings.length === 0) {
+    // Function to get deduction points by severity
+    const getDeductionPoints = (severity) => {
+      switch (severity) {
+        case 'lifeThreatening': return 10;
+        case 'severe': return 5;
+        case 'moderate': return 3;
+        case 'low': return 1;
+        default: return 1;
+      }
+    };
+    
+    // Process all findings across all areas
+    if (inspection.areas && inspection.areas.length > 0) {
+      inspection.areas.forEach(area => {
+        if (area.findings && area.findings.length > 0) {
+          area.findings.forEach(finding => {
+            totalFindings++;
+            totalDeductions += getDeductionPoints(finding.severity);
+          });
+        }
+      });
+    } else if (inspection.findings && inspection.findings.length > 0) {
+      // Backwards compatibility for old structure
+      inspection.findings.forEach(finding => {
+        totalFindings++;
+        totalDeductions += getDeductionPoints(finding.severity);
+      });
+    }
+    
+    // If no findings, score is 100
+    if (totalFindings === 0) {
       return 100;
     }
     
-    // Level 1: -1 point, Level 2: -3 points, Level 3: -5 points
-    const deductions = inspection.findings.reduce((total, finding) => {
-      switch (finding.severity) {
-        case 1: return total + 1;
-        case 2: return total + 3;
-        case 3: return total + 5;
-        default: return total;
-      }
-    }, 0);
-    
-    // Maximum possible score is 100
-    return Math.max(0, 100 - deductions);
+    // Calculate score - cap deductions at 75 to ensure minimum score of 25
+    const cappedDeductions = Math.min(totalDeductions, 75);
+    return Math.max(25, 100 - cappedDeductions);
+  };
+  
+  // Get severity details
+  const getSeverityDetails = (severity) => {
+    switch (severity) {
+      case 'lifeThreatening':
+        return {
+          label: "Life Threatening",
+          color: "#f8d7da",
+          textColor: "#721c24"
+        };
+      case 'severe':
+        return {
+          label: "Severe",
+          color: "#fff3cd",
+          textColor: "#856404"
+        };
+      case 'moderate':
+        return {
+          label: "Moderate",
+          color: "#cce5ff",
+          textColor: "#004085"
+        };
+      case 'low':
+        return {
+          label: "Low",
+          color: "#d4edda",
+          textColor: "#155724"
+        };
+      default:
+        return {
+          label: "Unknown",
+          color: "#e9ecef",
+          textColor: "#495057"
+        };
+    }
+  };
+  
+  // Get area icon based on type
+  const getAreaIcon = (areaType) => {
+    switch (areaType) {
+      case 'unit':
+        return <Home size={20} />;
+      case 'inside':
+        return <Building size={20} />;
+      case 'outside':
+        return <Grid size={20} />;
+      default:
+        return null;
+    }
   };
   
   // Generate summary data
@@ -186,9 +206,10 @@ const SharedReport = () => {
       totalFindings: 0,
       byCategory: {},
       bySeverity: {
-        1: 0,
-        2: 0,
-        3: 0
+        lifeThreatening: 0,
+        severe: 0,
+        moderate: 0,
+        low: 0
       }
     };
     
@@ -201,8 +222,9 @@ const SharedReport = () => {
       summary.byCategory[finding.category]++;
       
       // Count by severity
-      if (finding.severity >= 1 && finding.severity <= 3) {
-        summary.bySeverity[finding.severity]++;
+      if (finding.severity) {
+        summary.bySeverity[finding.severity] = 
+          (summary.bySeverity[finding.severity] || 0) + 1;
       }
       
       summary.totalFindings++;
@@ -242,7 +264,7 @@ const SharedReport = () => {
   
   if (error) {
     return (
-      <div className="container" style={{ padding: '24px', maxWidth: '600px', margin: '0 auto' }}>
+      <div className="container" style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
         <div style={{ 
           backgroundColor: '#f8d7da', 
           color: '#721c24', 
@@ -261,7 +283,7 @@ const SharedReport = () => {
   
   if (!inspection || !property) {
     return (
-      <div className="container" style={{ padding: '24px', maxWidth: '600px', margin: '0 auto' }}>
+      <div className="container" style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
         <div style={{ 
           backgroundColor: '#fff3cd', 
           color: '#856404', 
@@ -303,367 +325,255 @@ const SharedReport = () => {
   }
   
   return (
-    <div className="container report-container">
+    <div className="report-container w-full">
       {/* Report header for shared view */}
-      <div className="report-header">
-        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>
-          Property Inspection Report
-        </h1>
-        
-        <div className="report-actions">
-          <button 
-            className="btn btn-secondary" 
-            onClick={handlePrint}
-          >
-            <Printer size={16} style={{ marginRight: '6px' }} />Print
-          </button>
+      <div className="report-header bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
+        <div className="max-w-[2000px] mx-auto w-full px-4 py-4 flex justify-between items-center">
+          <h1 className="text-xl font-bold m-0">
+            Property Inspection Report
+          </h1>
+          
+          <div className="report-actions flex gap-2">
+            <button 
+              className="btn btn-secondary py-2 px-4 bg-gray-100 rounded flex items-center hover:bg-gray-200"
+              onClick={handlePrint}
+            >
+              <Printer size={16} className="mr-2" />Print
+            </button>
+          </div>
         </div>
       </div>
       
-      {/* Shared version banner */}
-      <div style={{ 
-        backgroundColor: '#e3f2fd', 
-        padding: '12px 16px', 
-        textAlign: 'center', 
-        color: '#0d47a1',
-        margin: '0 0 20px 0'
-      }}>
-        This is a shared version of the inspection report.
-      </div>
-      
-      {/* Report content */}
-      <div className="report-content">
-        {/* Report Header */}
-        <div className="report-title">
-          <h1>Property Inspection Report: {property.name}</h1>
-          <p>Generated on {new Date().toLocaleDateString()}</p>
-        </div>
-        
-        {/* Property & Inspection Details */}
-        <div className="report-info">
-          {/* Property Details */}
-          <div className="info-section">
-            <h2>Property Details</h2>
-            <div className="info-grid">
-              <div>
-                <p><strong>Name:</strong> {property.name}</p>
-                <p><strong>Address:</strong> {property.address}</p>
-              </div>
-              <div>
-                <p><strong>Units:</strong> {property.units}</p>
-                <p><strong>Buildings:</strong> {property.buildingCount}</p>
+      {/* Report Content */}
+      <div className="max-w-[2000px] mx-auto w-full px-4 pb-16">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          {/* Report Header */}
+          <div className="text-center border-b pb-6 mb-6">
+            <h1 className="text-3xl font-bold mb-2">Property Inspection Report: {property.name}</h1>
+            <p className="text-gray-500">Generated on {new Date().toLocaleDateString()}</p>
+          </div>
+          
+          {/* Property & Inspection Details */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h2 className="text-xl font-semibold mb-3 border-b pb-2">Property Details</h2>
+              <p className="text-lg"><strong>Name:</strong> {property.name}</p>
+              <p className="text-lg"><strong>Address:</strong> {property.address}</p>
+              <p className="text-lg"><strong>Units:</strong> {property.units}</p>
+              <p className="text-lg"><strong>Buildings:</strong> {property.buildingCount}</p>
+            </div>
+            
+            <div>
+              <h2 className="text-xl font-semibold mb-3 border-b pb-2">Inspection Details</h2>
+              <p className="text-lg"><strong>Date:</strong> {new Date(inspection.date).toLocaleDateString()}</p>
+              <p className="text-lg"><strong>Inspector:</strong> {inspection.inspector}</p>
+              <p className="text-lg"><strong>Status:</strong> {inspection.status}</p>
+              <div className="flex items-center mt-2">
+                <span className="mr-2 text-lg"><strong>Score:</strong></span>
+                <span className={`px-3 py-1 rounded-full font-semibold text-lg ${
+                  score >= 90 ? 'bg-green-100 text-green-800' : 
+                  score >= 80 ? 'bg-yellow-100 text-yellow-800' : 
+                  score >= 60 ? 'bg-orange-100 text-orange-800' : 
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {score}
+                </span>
               </div>
             </div>
           </div>
           
-          {/* Inspection Details */}
-          <div className="info-section">
-            <h2>Inspection Details</h2>
-            <div className="info-grid">
-              <div>
-                <p><strong>Date:</strong> {new Date(inspection.date).toLocaleDateString()}</p>
-                <p><strong>Inspector:</strong> {inspection.inspector}</p>
+          {/* Summary Section */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-3 border-b pb-2">Summary</h2>
+            
+            {/* First row: overall stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-100 p-6 rounded-lg text-center">
+                <div className="text-4xl font-bold mb-2">{summary.totalFindings}</div>
+                <div className="text-lg text-gray-700">Total Findings</div>
               </div>
-              <div>
-                <p><strong>Total Findings:</strong> {summary.totalFindings}</p>
-                <p className="score-display">
-                  <span>NSPIRE Score: </span>
-                  <span className={`score-badge ${
-                    score >= 90 ? 'score-high' : 
-                    score >= 80 ? 'score-medium' : 'score-low'
-                  }`}>
-                    {score}
-                  </span>
-                </p>
+              
+              <div className="bg-blue-50 p-6 rounded-lg text-center">
+                <div className="text-4xl font-bold mb-2">{score}</div>
+                <div className="text-lg text-gray-700">Inspection Score</div>
               </div>
             </div>
-          </div>
-        </div>
-        
-        {/* Summary Section */}
-        <div className="report-summary">
-          <h2>Summary</h2>
-          
-          {/* Findings by Category */}
-          <div className="summary-section">
-            <h3>Findings by Category</h3>
-            <div className="summary-cards">
-              {Object.entries(summary.byCategory).map(([category, count]) => (
-                <div key={category} className="summary-card">
-                  <div className="summary-card-value">{count}</div>
-                  <div className="summary-card-label">{categoryNames[category] || category}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Findings by Severity */}
-          <div className="summary-section">
-            <h3>Findings by Severity</h3>
-            <div className="summary-cards">
-              {Object.entries(summary.bySeverity).map(([level, count]) => {
-                const severityLevel = parseInt(level);
-                return (
-                  <div 
-                    key={level} 
-                    className="summary-card"
-                    style={{
-                      backgroundColor: getSeverityColor(severityLevel),
-                      color: getSeverityTextColor(severityLevel)
-                    }}
-                  >
-                    <div className="summary-card-value">{count}</div>
-                    <div className="summary-card-label">Level {level}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          
-          {/* Areas summary if using new structure */}
-          {inspection.areas && inspection.areas.length > 0 && (
-            <div className="summary-section">
-              <h3>Areas Inspected</h3>
-              <div className="summary-cards">
-                {inspection.areas.map(area => (
-                  <div key={area.id} className="summary-card">
-                    <div className="summary-card-value">{area.findings ? area.findings.length : 0}</div>
-                    <div className="summary-card-label">{area.name}</div>
+            
+            {/* Findings by Category */}
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-3">Findings by Category</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {Object.entries(summary.byCategory).map(([category, count]) => (
+                  <div key={category} className="bg-gray-50 p-4 rounded-lg text-center shadow-sm">
+                    <div className="text-xl font-bold">{count}</div>
+                    <div className="text-sm">{categoryNames[category] || category}</div>
                   </div>
                 ))}
               </div>
             </div>
-          )}
+            
+            {/* Findings by Severity */}
+            <div>
+              <h3 className="text-lg font-medium mb-3">Findings by Severity</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Object.entries(summary.bySeverity).map(([severity, count]) => {
+                  const details = getSeverityDetails(severity);
+                  return (
+                    <div 
+                      key={severity} 
+                      className="p-6 rounded-lg text-center shadow-sm"
+                      style={{ backgroundColor: details.color, color: details.textColor }}
+                    >
+                      <div className="text-2xl font-bold mb-1">{count}</div>
+                      <div className="text-base">{details.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
         
-        {/* Detailed Findings */}
-        <div className="report-findings">
-          <h2>Detailed Findings</h2>
+        {/* Findings by Area */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 border-b pb-2">Detailed Findings</h2>
           
-          {/* Render findings */}
           {inspection.areas && inspection.areas.length > 0 ? (
-            // New structure - render by area
-            inspection.areas.map(area => (
-              <div key={area.id} className="findings-category">
-                {/* Collapsible section header */}
-                <div 
-                  className="category-header"
-                  onClick={() => toggleSection(area.id)}
-                  style={{ display: 'flex', alignItems: 'center' }}
-                >
-                  {area.areaType === 'unit' ? (
-                    <Home size={20} style={{ marginRight: '8px' }} />
-                  ) : area.areaType === 'exterior' || area.areaType === 'common' ? (
-                    <Building size={20} style={{ marginRight: '8px' }} />
-                  ) : null}
-                  <h3>{area.name} ({area.findings ? area.findings.length : 0})</h3>
-                  <ChevronDown 
-                    className={`toggle-icon ${expandedSections[area.id] ? 'expanded' : ''}`} 
-                    size={20}
-                  />
-                </div>
+            <div className="space-y-4">
+              {inspection.areas.map(area => {
+                const hasFindings = area.findings && area.findings.length > 0;
+                if (!hasFindings) return null; // Skip areas with no findings
                 
-                {/* Collapsible content */}
-                {expandedSections[area.id] && area.findings && (
-                  <div className="category-findings">
-                    {area.findings.map((finding) => (
-                      <div 
-                        key={finding.id} 
-                        className="finding-card"
-                        style={{
-                          borderColor: getSeverityColor(finding.severity)
-                        }}
-                      >
-                        {/* Finding Header */}
-                        <div 
-                          className="finding-header"
-                          style={{
-                            backgroundColor: getSeverityColor(finding.severity),
-                            color: getSeverityTextColor(finding.severity)
-                          }}
-                        >
-                          <div className="finding-title">
-                            {categoryNames[finding.category] || finding.category}: {finding.subcategory}
-                          </div>
-                          <div className="finding-severity">
-                            {getSeverityLabel(finding.severity)}
-                          </div>
+                return (
+                  <div key={area.id} className="border rounded-lg overflow-hidden">
+                    {/* Area Header */}
+                    <div 
+                      className={`p-4 flex items-center justify-between cursor-pointer
+                        ${area.areaType === 'unit' ? 'bg-blue-50' : 
+                          area.areaType === 'inside' ? 'bg-purple-50' : 'bg-green-50'}`}
+                      onClick={() => toggleSection(area.id)}
+                    >
+                      <div className="flex items-center">
+                        <div className={`mr-3 ${
+                          area.areaType === 'unit' ? 'text-blue-600' : 
+                          area.areaType === 'inside' ? 'text-purple-600' : 'text-green-600'
+                        }`}>
+                          {getAreaIcon(area.areaType)}
                         </div>
-                        
-                        {/* Finding Details */}
-                        <div className="finding-content">
-                          <div className="finding-details">
-                            <p><strong>Deficiency:</strong> {finding.deficiency}</p>
-                            {finding.notes && (
-                              <p><strong>Notes:</strong> {finding.notes}</p>
-                            )}
-                          </div>
-                          
-                          {/* Photo Evidence */}
-                          {finding.photos && finding.photos.length > 0 && (
-                            <div className="finding-photos">
-                              <h4>Photo Evidence ({finding.photos.length})</h4>
-                              <div className="photo-thumbnails">
-                                {finding.photos.map((photo, index) => (
-                                  <div 
-                                    key={index} 
-                                    className="photo-thumbnail"
-                                    onClick={() => openImageModal(photo.data || photo.url, finding)}
-                                  >
-                                    <img 
-                                      src={photo.data || photo.url} 
-                                      alt={`Finding ${index + 1}`}
-                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    />
-                                    <div className="zoom-icon">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <h3 className="font-medium text-lg">
+                          {area.name}
+                          <span className="ml-2 text-sm text-gray-500">
+                            ({hasFindings ? area.findings.length : 0} finding{hasFindings && area.findings.length !== 1 ? 's' : ''})
+                          </span>
+                        </h3>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          ) : inspection.findings && inspection.findings.length > 0 ? (
-            // Old structure - render by category
-            Object.keys(findingsByCategory).map(category => {
-              const findings = findingsByCategory[category];
-              if (findings.length === 0) return null;
-              
-              return (
-                <div key={category} className="findings-category">
-                  {/* Collapsible section header */}
-                  <div 
-                    className="category-header"
-                    onClick={() => toggleSection(category)}
-                  >
-                    <h3>{categoryNames[category]} ({findings.length})</h3>
-                    <ChevronDown 
-                      className={`toggle-icon ${expandedSections[category] ? 'expanded' : ''}`} 
-                      size={20}
-                    />
-                  </div>
-                  
-                  {/* Collapsible content */}
-                  {expandedSections[category] && (
-                    <div className="category-findings">
-                      {findings.map((finding) => (
-                        <div 
-                          key={finding.id} 
-                          className="finding-card"
-                          style={{
-                            borderColor: getSeverityColor(finding.severity)
-                          }}
-                        >
-                          {/* Finding Header */}
-                          <div 
-                            className="finding-header"
-                            style={{
-                              backgroundColor: getSeverityColor(finding.severity),
-                              color: getSeverityTextColor(finding.severity)
-                            }}
-                          >
-                            <div className="finding-title">
-                              {finding.subcategory}
-                            </div>
-                            <div className="finding-severity">
-                              {getSeverityLabel(finding.severity)}
-                            </div>
-                          </div>
-                          
-                          {/* Finding Details */}
-                          <div className="finding-content">
-                            <div className="finding-details">
-                              <p><strong>Location:</strong> {finding.location}</p>
-                              <p><strong>Deficiency:</strong> {finding.deficiency}</p>
-                              {finding.notes && (
-                                <p><strong>Notes:</strong> {finding.notes}</p>
-                              )}
-                            </div>
-                            
-                            {/* Photo Evidence */}
-                            {finding.photos && finding.photos.length > 0 && (
-                              <div className="finding-photos">
-                                <h4>Photo Evidence ({finding.photos.length})</h4>
-                                <div className="photo-thumbnails">
-                                  {finding.photos.map((photo, index) => (
-                                    <div 
-                                      key={index} 
-                                      className="photo-thumbnail"
-                                      onClick={() => openImageModal(photo.data || photo.url, finding)}
+                      <ChevronDown 
+                        size={20} 
+                        className={`transform transition-transform ${expandedSections[area.id] ? 'rotate-180' : ''}`} 
+                      />
+                    </div>
+                    
+                    {/* Area Findings */}
+                    {expandedSections[area.id] && (
+                      <div className="p-4 border-t">
+                        <div className="space-y-4">
+                          {area.findings.map(finding => {
+                            const severityDetails = getSeverityDetails(finding.severity);
+                            return (
+                              <div 
+                                key={finding.id} 
+                                className="border rounded-lg overflow-hidden shadow-sm"
+                                style={{ borderLeftColor: severityDetails.color, borderLeftWidth: '8px' }}
+                              >
+                                <div className="p-4">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <h4 className="font-medium text-lg">{finding.subcategory}</h4>
+                                    <span 
+                                      className="text-sm px-3 py-1 rounded"
+                                      style={{ backgroundColor: severityDetails.color, color: severityDetails.textColor }}
                                     >
-                                      <img 
-                                        src={photo.data || photo.url} 
-                                        alt={`Finding ${index + 1}`}
-                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                      />
-                                      <div className="zoom-icon">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                      {severityDetails.label}
+                                    </span>
+                                  </div>
+                                  
+                                  <p className="mb-3 text-base">{finding.deficiency}</p>
+                                  
+                                  {finding.notes && (
+                                    <div className="mb-3">
+                                      <strong className="text-sm">Notes:</strong>
+                                      <p className="text-sm text-gray-700">{finding.notes}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {finding.photos && finding.photos.length > 0 && (
+                                    <div>
+                                      <strong className="text-sm block mb-2">Photos ({finding.photos.length}):</strong>
+                                      <div className="flex flex-wrap gap-2">
+                                        {finding.photos.map((photo, index) => (
+                                          <div 
+                                            key={index} 
+                                            className="w-20 h-20 rounded overflow-hidden border cursor-pointer"
+                                            onClick={() => openImageModal(photo.data || photo.url, finding)}
+                                          >
+                                            <img 
+                                              src={photo.data || photo.url} 
+                                              alt={`Finding ${index + 1}`} 
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                        ))}
                                       </div>
                                     </div>
-                                  ))}
+                                  )}
                                 </div>
                               </div>
-                            )}
-                          </div>
+                            );
+                          })}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           ) : (
-            <div style={{ 
-              backgroundColor: '#f8f9fa', 
-              padding: '24px', 
-              textAlign: 'center', 
-              borderRadius: '8px' 
-            }}>
-              <p>No findings have been recorded for this inspection.</p>
+            <div className="bg-gray-50 p-6 text-center rounded-lg">
+              <p className="text-gray-500">No areas have been added to this inspection.</p>
             </div>
           )}
         </div>
         
-        {/* Report footer */}
-        <div className="report-footer">
-          <p>This report was generated using the Property Inspection App</p>
-          <p>© 2025 Property Inspection Software</p>
+        {/* Report Footer */}
+        <div className="text-center text-gray-500 text-sm mb-8">
+          <p>Report generated on {new Date().toLocaleString()}</p>
+          <p>© {new Date().getFullYear()} Property Inspection App</p>
         </div>
       </div>
-
+      
       {/* Image Modal */}
       {showImageModal && activeImage && (
         <div 
-          className="image-modal-overlay"
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
           onClick={() => setShowImageModal(false)}
         >
-          <div className="image-modal-container">
-            <img 
-              src={activeImage.url} 
-              alt={`Finding: ${activeImage.finding.deficiency}`} 
-              className="image-modal-image"
-            />
-            <button 
-              className="image-modal-close"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowImageModal(false);
-              }}
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="image-modal-details">
-            <h3>{categoryNames[activeImage.finding.category] || activeImage.finding.category}: {activeImage.finding.subcategory}</h3>
-            <p><strong>Deficiency:</strong> {activeImage.finding.deficiency}</p>
+          <div className="max-w-4xl max-h-full flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="relative bg-white p-2 rounded-t-lg">
+              <button 
+                className="absolute top-2 right-2 p-1 bg-gray-200 rounded-full"
+                onClick={() => setShowImageModal(false)}
+              >
+                <X size={20} />
+              </button>
+              <img 
+                src={activeImage.url} 
+                alt="Finding" 
+                className="max-h-[70vh] max-w-[90vw] object-contain rounded"
+              />
+            </div>
+            <div className="bg-white p-4 rounded-b-lg">
+              <h3 className="font-medium mb-1">{activeImage.finding.subcategory}</h3>
+              <p className="text-sm text-gray-700">{activeImage.finding.deficiency}</p>
+            </div>
           </div>
         </div>
       )}

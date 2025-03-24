@@ -1,4 +1,4 @@
-// src/pages/inspections/InspectionReportPage.jsx
+// src/pages/inspections/InspectionReportPage.jsx - Updated with status handling
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
@@ -24,7 +24,7 @@ import { db } from '../../firebase';
 const InspectionReportPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getInspection, calculateScore } = useInspection();
+  const { getInspection, updateInspection } = useInspection();
   const { getProperty } = useProperty();
   
   const [report, setReport] = useState(null);
@@ -35,6 +35,7 @@ const InspectionReportPage = () => {
   const [activeImage, setActiveImage] = useState(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [shareSuccess, setShareSuccess] = useState('');
+  const [statusUpdated, setStatusUpdated] = useState(false);
   
   useEffect(() => {
     const loadData = async () => {
@@ -156,20 +157,48 @@ const InspectionReportPage = () => {
     setShowImageModal(true);
   };
   
-  // Handle print action
-  const handlePrint = () => {
+  // Update inspection status to completed
+  const updateStatusToCompleted = async () => {
+    if (statusUpdated) return; // Prevent multiple updates
+    
+    try {
+      await updateInspection(id, {
+        status: 'Completed',
+        updatedAt: new Date().toISOString()
+      });
+      
+      setStatusUpdated(true);
+      console.log('Inspection status updated to Completed');
+    } catch (err) {
+      console.error('Error updating inspection status:', err);
+    }
+  };
+  
+  // Handle print action - now also updates status
+  const handlePrint = async () => {
+    await updateStatusToCompleted();
     window.print();
   };
   
-  // Handle share report
+  // Handle download action - now also updates status
+  const handleDownload = async () => {
+    await updateStatusToCompleted();
+    // Implementation for PDF download would go here
+    alert('Download PDF functionality would go here');
+  };
+  
+  // Handle share report - now also updates status
   const handleShareReport = async () => {
     try {
       // Mark the inspection as shared in Firestore
       await updateDoc(doc(db, 'inspections', id), {
         isShared: true,
         sharedIds: arrayUnion(id),
-        sharedAt: serverTimestamp()
+        sharedAt: serverTimestamp(),
+        status: 'Completed' // Set status to completed when sharing
       });
+      
+      setStatusUpdated(true);
       
       // Generate the shareable link
       const shareableLink = `${window.location.origin}/shared/reports/${id}`;
@@ -195,23 +224,21 @@ const InspectionReportPage = () => {
     }
   };
   
-  // Handle email action
-  const handleEmailReport = () => {
+  // Handle email action - now also updates status
+  const handleEmailReport = async () => {
     const recipientEmail = prompt("Enter recipient's email address:");
     if (recipientEmail && recipientEmail.includes('@')) {
-      // First mark as shared
-      updateDoc(doc(db, 'inspections', id), {
+      // First mark as shared and update status
+      await updateDoc(doc(db, 'inspections', id), {
         isShared: true,
         sharedIds: arrayUnion(id),
-        sharedAt: serverTimestamp()
-      }).then(() => {
-        setShareSuccess(`Report will be emailed to ${recipientEmail}`);
-        setTimeout(() => setShareSuccess(''), 5000);
-      }).catch(err => {
-        setError('Error preparing report for sharing: ' + err.message);
-        setTimeout(() => setError(''), 5000);
+        sharedAt: serverTimestamp(),
+        status: 'Completed' // Set status to completed when emailing
       });
       
+      setStatusUpdated(true);
+      setShareSuccess(`Report will be emailed to ${recipientEmail}`);
+      setTimeout(() => setShareSuccess(''), 5000);
       setShowShareOptions(false);
     } else if (recipientEmail) {
       setError('Please enter a valid email address');
@@ -380,10 +407,7 @@ const InspectionReportPage = () => {
           
           <button 
             className="p-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-lg flex items-center text-sm font-medium"
-            onClick={() => {
-              // Handle PDF download (implementation would go here)
-              alert('Download PDF functionality would go here');
-            }}
+            onClick={handleDownload}
           >
             <Download size={16} className="mr-1" /> Download
           </button>

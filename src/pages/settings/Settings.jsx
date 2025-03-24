@@ -1,19 +1,15 @@
-// src/pages/settings/Settings.jsx (updated with team options)
+// Simplified src/pages/settings/Settings.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Header';
-import Button from '../../components/Button';
-import Card from '../../components/Card';
-import Alert from '../../components/Alert';
-import { User, LogOut, HelpCircle, Shield, Bell, Info, Trash2, Users, Building } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 
 const Settings = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   const handleLogout = async () => {
     try {
@@ -21,114 +17,62 @@ const Settings = () => {
       await logout();
       navigate('/login');
     } catch (error) {
-      setError('Failed to log out: ' + error.message);
+      setError('Failed to log out. Please try again.');
       setLoading(false);
     }
   };
   
-  const handleClearData = () => {
-    if (window.confirm('Are you sure you want to clear all app data? This cannot be undone.')) {
-      // In a real app, this would clear data from Firebase
-      // For now, we'll just show a success message
-      setSuccess('All data has been cleared. You will be logged out.');
-      
-      // Logout after a short delay
-      setTimeout(() => {
-        logout();
-        navigate('/login');
-      }, 2000);
-    }
-  };
-  
   return (
-    <div className="container settings-page">
+    <div className="container max-w-lg mx-auto pb-20 px-4">
       <Header title="Settings" />
       
-      {success && <Alert type="success" message={success} />}
-      {error && <Alert type="danger" message={error} />}
+      {error && (
+        <div className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
       
-      {/* User profile section */}
-      <Card className="profile-card">
-        <div className="profile-header">
-          <div className="profile-avatar">
-            <User size={48} />
-          </div>
-          <div className="profile-info">
-            <h2>{currentUser.displayName || 'User'}</h2>
-            <p>{currentUser.email}</p>
+      {/* User Profile Card */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+        <div className="p-6">
+          <div className="flex items-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+              <User size={28} className="text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {currentUser.displayName || 'User'}
+              </h2>
+              <p className="text-gray-600">{currentUser.email}</p>
+            </div>
           </div>
         </div>
-      </Card>
-      
-      {/* Settings sections */}
-      <div className="settings-section">
-        <h3>Application</h3>
-        <ul className="settings-list">
-          <li className="settings-item">
-            <div className="settings-item-icon">
-              <Bell size={20} />
-            </div>
-            <div className="settings-item-content">
-              <h4>Notifications</h4>
-              <p>Configure app notification settings</p>
-            </div>
-          </li>
-          
-          <li className="settings-item">
-            <div className="settings-item-icon">
-              <HelpCircle size={20} />
-            </div>
-            <div className="settings-item-content">
-              <h4>Help & Support</h4>
-              <p>View tutorials and contact support</p>
-            </div>
-          </li>
-          
-          <li className="settings-item">
-            <div className="settings-item-icon">
-              <Info size={20} />
-            </div>
-            <div className="settings-item-content">
-              <h4>About NSPIRE Pre-Inspection</h4>
-              <p>Version 1.0.0</p>
-            </div>
-          </li>
-        </ul>
       </div>
       
-      <div className="settings-section">
-        <h3>Account</h3>
-        <ul className="settings-list">
-          <li className="settings-item">
-            <div className="settings-item-icon">
-              <Shield size={20} />
-            </div>
-            <div className="settings-item-content">
-              <h4>Privacy & Security</h4>
-              <p>Manage account security settings</p>
-            </div>
-          </li>
-          
-          <li className="settings-item danger" onClick={handleClearData}>
-            <div className="settings-item-icon">
-              <Trash2 size={20} />
-            </div>
-            <div className="settings-item-content">
-              <h4>Clear App Data</h4>
-              <p>Delete all stored data and reset app</p>
-            </div>
-          </li>
-          
-          <li className="settings-item danger" onClick={handleLogout}>
-            <div className="settings-item-icon">
-              <LogOut size={20} />
-            </div>
-            <div className="settings-item-content">
-              <h4>Logout</h4>
-              <p>Sign out of your account</p>
-            </div>
-          </li>
-        </ul>
+      {/* Account Actions */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="border-b border-gray-100 px-6 py-4">
+          <h3 className="text-lg font-semibold text-gray-900">Account</h3>
+        </div>
+        
+        <div className="p-2">
+          <button 
+            onClick={handleLogout}
+            disabled={loading}
+            className="w-full text-left px-4 py-4 hover:bg-red-50 text-red-600 rounded-lg transition-colors flex items-center"
+          >
+            <LogOut size={20} className="mr-3" />
+            <span className="font-medium">
+              {loading ? 'Logging out...' : 'Logout'}
+            </span>
+          </button>
+        </div>
+      </div>
+      
+      {/* App Info */}
+      <div className="mt-6 text-center text-gray-500 text-sm">
+        <p>NSPIRE Pre-Inspection App</p>
+        <p>Version 1.0.0</p>
       </div>
     </div>
   );

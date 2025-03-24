@@ -15,13 +15,14 @@ import {
   CheckCircle,
   AlertTriangle,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Check
 } from 'lucide-react';
 
 const InspectionMain = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getInspection, calculateScore } = useInspection();
+  const { getInspection, calculateScore, updateInspection } = useInspection();
   const { getProperty } = useProperty();
   
   const [inspection, setInspection] = useState(null);
@@ -29,6 +30,8 @@ const InspectionMain = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [score, setScore] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
   
   useEffect(() => {
     const loadData = async () => {
@@ -59,6 +62,30 @@ const InspectionMain = () => {
     
     loadData();
   }, [id, getInspection, getProperty, calculateScore, navigate]);
+  
+  const handleStatusChange = async (newStatus) => {
+    try {
+      setUpdatingStatus(true);
+      
+      // Update inspection status
+      await updateInspection(id, { status: newStatus });
+      
+      // Update local state
+      setInspection({
+        ...inspection,
+        status: newStatus
+      });
+      
+      // Show success message briefly
+      setStatusUpdateSuccess(true);
+      setTimeout(() => setStatusUpdateSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error updating status:", error);
+      setError(`Failed to update status: ${error.message || "Unknown error"}`);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
   
   const getAreaStatusSeverity = (areaType) => {
     // Get all findings from specific area type
@@ -185,11 +212,19 @@ const InspectionMain = () => {
           <span>{error}</span>
         </div>
       )}
-            
+      
+      {/* Success message for status update */}
+      {statusUpdateSuccess && (
+        <div className="fixed top-16 inset-x-0 mx-auto w-max px-4 py-2 bg-green-100 text-green-800 rounded-md shadow-md flex items-center z-50">
+          <Check size={18} className="mr-2" />
+          Inspection status updated successfully
+        </div>
+      )}
+      
       {/* Property Header */}
       <div className="px-4 mt-4 mb-4">
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <div class="flex gap-2">
+          <div className="flex gap-2">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl bg-green-500`}>
               {score}
             </div>
@@ -198,6 +233,7 @@ const InspectionMain = () => {
               <p className="text-gray-500 text-sm mb-3">{property.address}</p>
             </div>
           </div>
+          
           <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-gray-200 pt-3">
             <div className="flex items-center">
               <Calendar size={16} className="text-gray-400 mr-2" />
@@ -213,10 +249,25 @@ const InspectionMain = () => {
               </span>
             </div>
             
+            {/* Status Dropdown */}
             <div className="flex items-center">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800`}>
-                {inspection.status}
-              </span>
+              <div className="relative inline-block">
+                <select
+                  className="appearance-none px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 pr-8 cursor-pointer border border-blue-200 hover:bg-blue-200 transition-colors"
+                  value={inspection.status}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  disabled={updatingStatus}
+                >
+                  <option value="Scheduled">Scheduled</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-800">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>

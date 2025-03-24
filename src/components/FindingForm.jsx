@@ -9,6 +9,7 @@ import {
   AlertTriangle, 
   Clock,
   CheckCircle,
+  ChevronRight,
   Save,
   Plus,
   Trash2,
@@ -27,6 +28,37 @@ import {
  * @param {Function} props.onCancel - Callback when form is canceled
  * @param {Function} props.onDelete - Callback for deleting a finding (only used in edit mode)
  */
+
+const getAutomaticSeverity = (category, subcategory) => {
+  // Check if we have deficiency data for this category/subcategory
+  const matchingDeficiencies = Object.entries(nspireDeficiencies)
+    .filter(([_, deficiency]) => 
+      deficiency.category === category && 
+      deficiency.subcategory === subcategory
+    );
+  
+  if (matchingDeficiencies.length > 0) {
+    // Use the first matching deficiency's severity
+    return matchingDeficiencies[0][1].severity;
+  }
+  
+  // Default severities by category
+  const defaultSeverities = {
+    'fire_life_safety': 'lifeThreatening',
+    'site': 'moderate',
+    'buildingExterior': 'moderate',
+    'buildingSystems': 'severe',
+    'commonAreas': 'moderate',
+    'unit': 'moderate',
+    'electrical': 'severe',
+    'bathroom': 'moderate',
+    'kitchen': 'moderate'
+  };
+  
+  return defaultSeverities[category] || 'moderate';
+};
+
+
 const FindingForm = ({ 
   inspectionId, 
   areaId, 
@@ -96,11 +128,16 @@ const FindingForm = ({
   
   const handleCategorySelect = (selectedCategory) => {
     setCategory(selectedCategory);
+    // Reset subcategory when category changes
+    setSubcategory('');
+    // Don't set severity yet, wait for subcategory selection
     setCurrentStep(2);
   };
   
   const handleSubcategorySelect = (selectedSubcategory) => {
     setSubcategory(selectedSubcategory);
+    // Auto-set severity based on category and subcategory
+    setSeverity(getAutomaticSeverity(category, selectedSubcategory));
     setCurrentStep(3);
   };
   
@@ -369,85 +406,8 @@ const FindingForm = ({
               required
             ></textarea>
           </div>
-          
-          {/* Severity Selection */}
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Severity
-            </label>
-            
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {['lifeThreatening', 'severe', 'moderate', 'low'].map(severityLevel => {
-                const details = getSeverityDetails(severityLevel);
-                const isSelected = severity === severityLevel;
-                
-                return (
-                  <button
-                    key={severityLevel}
-                    type="button"
-                    className={`p-3 rounded-lg border flex items-center ${
-                      isSelected 
-                        ? `border-${details.color}-500 bg-${details.color}-50 text-${details.color}-700` 
-                        : 'border-gray-300 text-gray-700'
-                    }`}
-                    onClick={() => setSeverity(severityLevel)}
-                  >
-                    <div className={`p-1 rounded-full ${isSelected ? `bg-${details.color}-100` : 'bg-gray-100'} mr-2`}>
-                      {details.icon}
-                    </div>
-                    <span>{details.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-            
-            <div className={`p-3 rounded-lg bg-${severityDetails.color}-50 text-${severityDetails.color}-700 flex items-center`}>
-              <Clock size={16} className="mr-2" />
-              <span>
-                Required repair timeframe: <strong>{severityDetails.timeframe}</strong>
-                {areaType === 'unit' && 
-                  <span className="ml-1">
-                    | {severity === 'low' ? <strong>Pass</strong> : <strong>Fail</strong>}
-                  </span>
-                }
-              </span>
-            </div>
-          </div>
-          
-          {/* Repair Status (only for edit mode) */}
-          {isEditMode && (
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Repair Status
-              </label>
-              <select
-                value={repairStatus}
-                onChange={(e) => setRepairStatus(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="open">Open</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="repaired">Repaired</option>
-                <option value="verified">Verified</option>
-              </select>
-            </div>
-          )}
-          
-          {/* Notes */}
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional notes..."
-              rows={2}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            ></textarea>
-          </div>
-          
-          {/* Photos */}
+
+{/* Photos */}
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
@@ -504,6 +464,88 @@ const FindingForm = ({
                 <span>Tap to add photo evidence</span>
               </button>
             )}
+          </div>
+          
+          {/* Severity Selection */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Severity
+            </label>
+            
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {['lifeThreatening', 'severe', 'moderate', 'low'].map(severityLevel => {
+                const details = getSeverityDetails(severityLevel);
+                const isSelected = severity === severityLevel;
+                
+                return (
+                  <button
+                    key={severityLevel}
+                    type="button"
+                    className={`p-3 rounded-lg border flex items-center ${
+                      isSelected 
+                        ? `border-${details.color}-500 bg-${details.color}-50 text-${details.color}-700` 
+                        : 'border-gray-300 text-gray-700'
+                    }`}
+                    onClick={() => setSeverity(severityLevel)}
+                  >
+                    <div className={`p-1 rounded-full ${isSelected ? `bg-${details.color}-100` : 'bg-gray-100'} mr-2`}>
+                      {details.icon}
+                    </div>
+                    <span>{details.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+            
+            {/* Add this right here - after the buttons grid */}
+            <div className="text-xs text-gray-500 mt-2">
+              <span className="bg-gray-100 px-2 py-1 rounded">Auto-assigned severity</span> (Can be changed if needed)
+            </div>
+            
+            <div className={`p-3 rounded-lg bg-${severityDetails.color}-50 text-${severityDetails.color}-700 flex items-center`}>
+              <Clock size={16} className="mr-2" />
+              <span>
+                Required repair timeframe: <strong>{severityDetails.timeframe}</strong>
+                {areaType === 'unit' && 
+                  <span className="ml-1">
+                    | {severity === 'low' ? <strong>Pass</strong> : <strong>Fail</strong>}
+                  </span>
+                }
+              </span>
+            </div>
+          </div>
+          
+          {/* Repair Status (only for edit mode) */}
+          {isEditMode && (
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Repair Status
+              </label>
+              <select
+                value={repairStatus}
+                onChange={(e) => setRepairStatus(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="open">Open</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="repaired">Repaired</option>
+                <option value="verified">Verified</option>
+              </select>
+            </div>
+          )}
+          
+          {/* Notes */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Notes (Optional)
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any additional notes..."
+              rows={2}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            ></textarea>
           </div>
           
           {/* Delete option (only for edit mode) */}

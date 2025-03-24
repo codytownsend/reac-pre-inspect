@@ -57,12 +57,10 @@ const Login = () => {
               alt="Remi Logo" 
               style={{ 
                 maxWidth: '180px', 
-                height: 'auto', 
-                marginBottom: '20px' 
+                height: 'auto'
               }} 
             />
           </div>
-          <h1>Sign In</h1>
           <p>Welcome back! Please sign in to continue.</p>
         </div>
         
@@ -79,6 +77,8 @@ const Login = () => {
               placeholder="your@email.com"
               required
               className="auth-input"
+              name="email"
+              autoComplete="email"
             />
           </div>
           
@@ -93,6 +93,8 @@ const Login = () => {
                 placeholder="••••••••"
                 required
                 className="auth-input"
+                name="password"
+                autoComplete="current-password"
               />
               <button 
                 type="button" 

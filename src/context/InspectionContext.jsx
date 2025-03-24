@@ -661,9 +661,36 @@ export const InspectionProvider = ({ children }) => {
     const inspection = getInspection(inspectionId);
     if (!inspection) return 100;
     
-    // Create an Inspection object to use our model methods
-    const inspectionObj = new Inspection(inspection);
-    return inspectionObj.calculateScore().score;
+    // If no areas or findings, return perfect score
+    if (!inspection.areas || inspection.areas.length === 0) {
+      return 100;
+    }
+    
+    // Aggregate all findings from all areas
+    const allFindings = [];
+    inspection.areas.forEach(area => {
+      if (area.findings && area.findings.length > 0) {
+        allFindings.push(...area.findings);
+      }
+    });
+    
+    if (allFindings.length === 0) {
+      return 100;
+    }
+    
+    // Calculate deductions based on severity
+    const deductions = allFindings.reduce((total, finding) => {
+      switch (finding.severity) {
+        case 'lifeThreatening': return total + 5;
+        case 'severe': return total + 3;
+        case 'moderate': return total + 1;
+        case 'low': return total + 0.5;
+        default: return total;
+      }
+    }, 0);
+    
+    // Return score with a minimum of 0
+    return Math.max(0, Math.round(100 - deductions));
   };
 
   const value = {
