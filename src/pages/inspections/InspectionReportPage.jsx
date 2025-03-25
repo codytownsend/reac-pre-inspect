@@ -1,4 +1,4 @@
-// src/pages/inspections/InspectionReportPage.jsx - Updated with status handling
+// src/pages/inspections/InspectionReportPage.jsx - Fixed calculate score issue
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
@@ -78,9 +78,43 @@ const InspectionReportPage = () => {
     loadData();
   }, [id, getInspection, getProperty, navigate]);
 
+  // FIXED: Internal calculation of score rather than relying on external function
+  const calculateScore = (inspection) => {
+    // If no areas or findings, score is 100
+    if (!inspection.areas || inspection.areas.length === 0) {
+      return 100;
+    }
+    
+    // Aggregate all findings from all areas
+    const allFindings = [];
+    inspection.areas.forEach(area => {
+      if (area.findings && area.findings.length > 0) {
+        allFindings.push(...area.findings);
+      }
+    });
+    
+    if (allFindings.length === 0) {
+      return 100;
+    }
+    
+    // Calculate deductions based on severity
+    const deductions = allFindings.reduce((total, finding) => {
+      switch (finding.severity) {
+        case 'lifeThreatening': return total + 5;
+        case 'severe': return total + 3;
+        case 'moderate': return total + 1;
+        case 'low': return total + 0.5;
+        default: return total;
+      }
+    }, 0);
+    
+    // Return score with a minimum of 0
+    return Math.max(0, Math.round(100 - deductions));
+  };
+
   const generateReport = (inspection, property) => {
-    // Calculate score if needed
-    const score = calculateScore(id);
+    // Calculate score directly
+    const score = calculateScore(inspection);
     
     // Generate report object
     const report = {

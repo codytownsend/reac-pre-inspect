@@ -3911,3 +3911,11 @@ h3 {
     grid-template-columns: repeat(5, 1fr);
   }
 }
+
+.grid span {
+  text-align: left;
+}
+
+.z-1500 {
+  z-index: 1500;
+}

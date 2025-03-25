@@ -1,91 +1,59 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, X, Check, RefreshCw, Image, AlertCircle } from 'lucide-react';
+import { Camera, X, Check, RefreshCw } from 'lucide-react';
 
 const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
   const [capturedImage, setCapturedImage] = useState(null);
-  const [error, setError] = useState(null);
-  const [stream, setStream] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [error, setError] = useState('');
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const fileInputRef = useRef(null);
-  
-  // Initialize camera when component mounts
+  let stream = null;
+
+  // Start camera immediately when component mounts
   useEffect(() => {
-    let isMounted = true; // Track if component is mounted
-    
-    const initCamera = async () => {
+    // Simple function to start the camera
+    async function startCamera() {
       try {
-        setLoading(true);
-        setError(null);
-        
-        // Request camera access with simple options first
+        console.log("Starting camera...");
+        // Basic camera request - keeping it simple
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: {
+            facingMode: "environment"  // This specifies the rear-facing camera
+          },
           audio: false
         });
         
-        // Make sure component is still mounted before updating state
-        if (!isMounted) return;
-        
-        setStream(mediaStream);
+        stream = mediaStream;
         
         // Connect stream to video element
         if (videoRef.current) {
+          console.log("Setting video source...");
           videoRef.current.srcObject = mediaStream;
-          
-          // Set a specific handler for when video can play
-          videoRef.current.oncanplay = () => {
-            if (isMounted) {
-              console.log("Video is ready to play");
-              setLoading(false);
-            }
-          };
-          
-          // Important: manually call play to start the video
-          videoRef.current.play().catch(err => {
-            console.error("Error playing video:", err);
-            if (isMounted) {
-              setError("Could not start camera preview");
-              setLoading(false);
-            }
-          });
+          setCameraReady(true);
         }
       } catch (err) {
-        console.error("Camera access error:", err);
-        if (!isMounted) return;
-        
-        let errorMessage = "Could not access camera";
-        
-        if (err.name === 'NotAllowedError') {
-          errorMessage = "Camera access was denied";
-        } else if (err.name === 'NotFoundError') {
-          errorMessage = "No camera found on your device";
-        } else if (err.name === 'NotReadableError') {
-          errorMessage = "Camera is in use by another application";
-        }
-        
-        setError(errorMessage);
-        setLoading(false);
+        console.error("Camera error:", err);
+        setError(`Camera access failed: ${err.message}`);
       }
-    };
+    }
     
-    initCamera();
+    startCamera();
     
-    // Clean up on unmount
+    // Clean up function to stop the camera when component unmounts
     return () => {
-      isMounted = false;
       if (stream) {
+        console.log("Stopping camera...");
         stream.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
-  
-  // Capture photo from video feed
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) {
-      setError("Camera components not ready");
+
+  // Function to capture the current frame from video to canvas
+  const takePhoto = () => {
+    console.log("Taking photo...");
+    if (!videoRef.current) {
+      console.error("Video element not found");
       return;
     }
     
@@ -93,104 +61,71 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
-      // Set canvas dimensions to match video
+      // Set canvas size to match video dimensions
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
-      // Draw current video frame to canvas
-      const context = canvas.getContext('2d');
-      context.drawImage(video, 0, 0);
+      // Draw the current video frame to canvas
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      // Convert canvas to data URL
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      // Convert to data URL
+      const imageData = canvas.toDataURL('image/jpeg');
+      console.log("Photo captured successfully");
       setCapturedImage(imageData);
       
-      // Stop camera to save resources
-      stopCamera();
+      // Stop the camera after capture to save resources
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
     } catch (err) {
       console.error("Error capturing photo:", err);
-      setError("Failed to capture photo");
+      setError(`Failed to capture photo: ${err.message}`);
     }
   };
-  
-  // Stop camera stream
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-  };
-  
-  // Retry camera initialization
-  const retryCamera = () => {
-    // Clean up existing stream first
-    stopCamera();
+
+  // Function to retake photo - restart camera
+  const retakePhoto = async () => {
+    setCapturedImage(null);
+    setError('');
     
-    // Start new camera stream
-    navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: false
-    })
-    .then(mediaStream => {
-      setStream(mediaStream);
+    try {
+      console.log("Restarting camera for retake...");
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: false 
+      });
+      
+      stream = mediaStream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.oncanplay = () => {
-          setLoading(false);
-        };
-        videoRef.current.play().catch(err => {
-          console.error("Error playing video:", err);
-          setError("Could not start camera preview");
-          setLoading(false);
-        });
+        setCameraReady(true);
       }
-    })
-    .catch(err => {
-      console.error("Camera retry error:", err);
-      setError("Could not access camera. Please check permissions.");
-      setLoading(false);
-    });
+    } catch (err) {
+      console.error("Error restarting camera:", err);
+      setError(`Couldn't restart camera: ${err.message}`);
+    }
   };
-  
-  // Retake photo (go back to camera)
-  const handleRetake = () => {
-    setCapturedImage(null);
-    setLoading(true);
-    setError(null);
-    retryCamera();
-  };
-  
-  // Use the captured photo
-  const handleSave = () => {
+
+  // Function to accept the captured photo
+  const acceptPhoto = () => {
     if (capturedImage) {
+      console.log("Photo accepted, sending to parent component");
       onPhotoCapture(capturedImage);
     }
   };
-  
-  // Handle file selection as fallback
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setCapturedImage(event.target.result);
-    };
-    reader.readAsDataURL(file);
-  };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-90 z-1500 flex flex-col">
       {/* Header */}
-      <div className="bg-black bg-opacity-50 p-4 flex justify-between items-center">
+      <div className="bg-black bg-opacity-70 p-4 flex justify-between items-center">
         <h2 className="text-white text-lg font-medium">
           {capturedImage ? 'Review Photo' : 'Take Photo'}
         </h2>
         <button 
-          className="w-10 h-10 flex items-center justify-center rounded-full text-white hover:bg-white hover:bg-opacity-20"
+          className="p-2 rounded-full bg-gray-800 text-white"
           onClick={onClose}
-          aria-label="Close"
         >
           <X size={24} />
         </button>
@@ -199,108 +134,73 @@ const FindingPhotoCapture = ({ onPhotoCapture, onClose }) => {
       {/* Main content */}
       <div className="flex-1 flex items-center justify-center bg-black">
         {capturedImage ? (
-          // Show captured image
+          // Show captured photo for review
           <img 
             src={capturedImage} 
             alt="Captured" 
             className="max-h-full max-w-full object-contain"
           />
         ) : (
-          // Show camera view or error
+          // Show camera feed or error
           <>
-            {loading ? (
-              // Loading state
-              <div className="text-white flex flex-col items-center">
-                <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p>Accessing camera...</p>
-              </div>
-            ) : error ? (
-              // Error state
-              <div className="text-white p-6 text-center max-w-md">
-                <div className="bg-red-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle size={32} />
-                </div>
-                <p className="mb-8">{error}</p>
-                <div className="flex flex-col gap-4">
-                  <button 
-                    className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg flex items-center justify-center mx-auto"
-                    onClick={retryCamera}
-                  >
-                    <Camera size={20} className="mr-2" /> 
-                    Try Again
-                  </button>
-                  <button 
-                    className="bg-gray-600 hover:bg-gray-500 text-white py-3 px-6 rounded-lg flex items-center justify-center mx-auto"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Image size={20} className="mr-2" /> 
-                    Select from Gallery
-                  </button>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*" 
-                    onChange={handleFileUpload}
-                  />
-                </div>
+            {error ? (
+              <div className="text-white text-center p-4">
+                <p className="mb-4 text-red-400">{error}</p>
+                <button 
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                  onClick={retakePhoto}
+                >
+                  Try Again
+                </button>
               </div>
             ) : (
-              // Camera view
               <video 
                 ref={videoRef}
                 autoPlay 
                 playsInline
                 muted
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
+                onCanPlay={() => console.log("Video can play now")}
               />
             )}
           </>
         )}
-        
-        <canvas ref={canvasRef} className="hidden" />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
       
-      {/* Footer controls */}
-      <div className="bg-black bg-opacity-50 p-4">
+      {/* Footer with controls */}
+      <div className="bg-black bg-opacity-70 p-4">
         {capturedImage ? (
-          // Controls for captured image
-          <div className="flex justify-between max-w-md mx-auto">
+          // Review controls
+          <div className="flex justify-between">
             <button 
-              className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg flex items-center"
-              onClick={handleRetake}
+              className="px-4 py-3 bg-gray-700 text-white rounded-lg"
+              onClick={retakePhoto}
             >
-              <RefreshCw size={20} className="mr-2" /> Retake
+              <RefreshCw size={20} className="mr-2 inline" /> 
+              Retake
             </button>
             <button 
-              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center"
-              onClick={handleSave}
+              className="px-4 py-3 bg-green-600 text-white rounded-lg"
+              onClick={acceptPhoto}
             >
-              <Check size={20} className="mr-2" /> Use Photo
-            </button>
-          </div>
-        ) : !error && !loading ? (
-          // Camera controls
-          <div className="flex justify-center">
-            <button 
-              className="w-16 h-16 rounded-full bg-white border-4 border-gray-300 flex items-center justify-center"
-              onClick={capturePhoto}
-              aria-label="Take photo"
-            >
-              <div className="w-12 h-12 rounded-full bg-white"></div>
+              <Check size={20} className="mr-2 inline" /> 
+              Use Photo
             </button>
           </div>
         ) : (
-          // If there's an error, allow selecting from gallery
-          error && (
+          // Camera controls
+          <div className="flex justify-center">
             <button 
-              className="bg-blue-500 hover:bg-blue-600 w-full max-w-md mx-auto text-white py-3 rounded-lg flex items-center justify-center"
-              onClick={() => fileInputRef.current?.click()}
+              disabled={!cameraReady}
+              className={`w-16 h-16 rounded-full ${cameraReady ? 'bg-white' : 'bg-gray-500'} flex items-center justify-center`}
+              onClick={takePhoto}
             >
-              <Image size={20} className="mr-2" /> 
-              Select from Gallery
+              <div className="w-14 h-14 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center">
+                <Camera size={24} className="text-black" />
+              </div>
             </button>
-          )
+          </div>
         )}
       </div>
     </div>

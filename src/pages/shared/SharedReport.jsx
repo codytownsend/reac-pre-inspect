@@ -327,7 +327,7 @@ const SharedReport = () => {
   return (
     <div className="report-container w-full">
       {/* Report header for shared view */}
-      <div className="report-header bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
+      <div className="report-header bg-white shadow-sm mb-4">
         <div className="max-w-[2000px] mx-auto w-full px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold m-0">
             Property Inspection Report
