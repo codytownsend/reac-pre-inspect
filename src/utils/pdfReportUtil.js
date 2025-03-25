@@ -1,85 +1,131 @@
-// src/utils/pdfGenerator.js
 import html2pdf from 'html2pdf.js';
 
-/**
- * Generates a PDF from HTML content
- * 
- * @param {string} elementId - The ID of the element to convert to PDF
- * @param {string} filename - The name of the output file
- * @param {Object} options - Custom configuration options for html2pdf
- * @returns {Promise} - Promise that resolves when PDF is generated
- */
+// Updated generatePDF function with larger finding images
 export const generatePDF = (elementId = 'report-content', filename = 'inspection-report.pdf', options = {}) => {
-  const element = document.getElementById(elementId);
-  
-  if (!element) {
-    throw new Error(`Element with ID "${elementId}" not found`);
-  }
-  
-  // Default options - can be overridden by passed options
-  const defaultOptions = {
-    margin: [10, 10, 10, 10],
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
-      scale: 3,  // Increased from 2 to 3 for better quality
-      useCORS: true,
-      logging: false
-    },
-    jsPDF: { 
-      unit: 'in', 
-      format: 'letter', 
-      orientation: 'portrait' 
+  return new Promise((resolve, reject) => {
+    const element = document.getElementById(elementId);
+    
+    if (!element) {
+      reject(new Error(`Element with ID "${elementId}" not found`));
+      return;
     }
-  };
-  
-  // Merge default options with passed options
-  const mergedOptions = { ...defaultOptions, ...options };
-  
-  // Create a clone of the element for printing
-  // This allows us to make temporary modifications for print
-  const clone = element.cloneNode(true);
-  clone.id = 'temp-for-pdf';
-  
-  // Temporarily append the clone to the document body
-  document.body.appendChild(clone);
-  
-  // Temporarily add print styles
-  const originalDisplayStyles = [];
-  
-  // Hide elements we don't want in the PDF
-  const elementsToHide = clone.querySelectorAll('.no-print, button, .print-hide');
-  elementsToHide.forEach((el, index) => {
-    originalDisplayStyles[index] = el.style.display;
-    el.style.display = 'none';
-  });
-  
-  // Generate PDF
-  return html2pdf()
-    .set(mergedOptions)
-    .from(clone)
-    .save()
-    .then(() => {
-      // Clean up - remove the clone and restore original styles
-      document.body.removeChild(clone);
-      
-      return {
-        success: true,
-        message: `PDF "${filename}" generated successfully`
-      };
-    })
-    .catch(error => {
-      // Clean up even if there's an error
-      if (document.body.contains(clone)) {
-        document.body.removeChild(clone);
+    
+    // Create a clone of the element for printing
+    const clone = element.cloneNode(true);
+    clone.id = 'temp-for-pdf';
+    
+    // Apply checklist-style formatting and enlarge images
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Make the report more like a functional checklist */
+      #temp-for-pdf {
+        font-family: Arial, sans-serif;
+        line-height: 1.3;
       }
       
-      console.error('Error generating PDF:', error);
+      /* Remove fancy backgrounds from summary boxes */
+      #temp-for-pdf .bg-blue-50,
+      #temp-for-pdf .bg-purple-50,
+      #temp-for-pdf .bg-green-50,
+      #temp-for-pdf .bg-gray-50,
+      #temp-for-pdf .bg-gray-100 {
+        background-color: white !important;
+        border: 1px solid #ddd !important;
+      }
       
-      return {
-        success: false,
-        message: 'Failed to generate PDF',
-        error
-      };
-    });
+      /* Make severity indicators more straightforward */
+      #temp-for-pdf .bg-red-100,
+      #temp-for-pdf .bg-yellow-100,
+      #temp-for-pdf .bg-blue-100,
+      #temp-for-pdf .bg-green-100 {
+        background-color: white !important;
+        border: 1px solid currentColor !important;
+        font-weight: bold !important;
+      }
+      
+      /* Simplify borders and rounded corners */
+      #temp-for-pdf .rounded-lg,
+      #temp-for-pdf .rounded-xl {
+        border-radius: 0 !important;
+      }
+      
+      /* Make finding descriptions clearer */
+      #temp-for-pdf .finding-deficiency {
+        font-weight: bold !important;
+        margin-bottom: 10px !important;
+      }
+      
+      /* Double the size of all images */
+      #temp-for-pdf .w-16.h-16,
+      #temp-for-pdf .finding-photo,
+      #temp-for-pdf .photo-thumbnail,
+      #temp-for-pdf .finding-item__photo {
+        width: 150px !important;
+        height: 150px !important;
+      }
+      
+      #temp-for-pdf img {
+        object-fit: contain !important;
+      }
+      
+      /* Make section titles more prominent */
+      #temp-for-pdf h2,
+      #temp-for-pdf h3 {
+        font-weight: bold !important;
+        border-bottom: 1px solid #000 !important;
+        padding-bottom: 5px !important;
+      }
+    `;
+    
+    // Add style to clone
+    clone.appendChild(style);
+    
+    // Remove any unnecessary elements
+    const elementsToRemove = clone.querySelectorAll('.print-hide, button, .no-print');
+    elementsToRemove.forEach(el => el.remove());
+    
+    // Append clone to body temporarily
+    document.body.appendChild(clone);
+    
+    // Configure PDF options for better quality images
+    const defaultOptions = {
+      margin: [15, 15, 15, 15],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        logging: false
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait',
+        compress: true
+      }
+    };
+    
+    const mergedOptions = { ...defaultOptions, ...options };
+    
+    // Try using window.html2pdf if available, otherwise use imported html2pdf
+    const pdfGenerator = window.html2pdf || html2pdf;
+    
+    // Generate PDF
+    pdfGenerator()
+      .from(clone)
+      .set(mergedOptions)
+      .save()
+      .then(() => {
+        // Clean up
+        document.body.removeChild(clone);
+        resolve({ success: true });
+      })
+      .catch(error => {
+        if (document.body.contains(clone)) {
+          document.body.removeChild(clone);
+        }
+        console.error('Error generating PDF:', error);
+        reject({ success: false, error });
+      });
+  });
 };

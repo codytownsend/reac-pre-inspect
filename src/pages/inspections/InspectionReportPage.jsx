@@ -213,7 +213,7 @@ const InspectionReportPage = () => {
     window.print();
   };
   
-  // Handle download action - FIXED to actually generate PDF
+  // Handle download action
   const handleDownload = async () => {
     try {
       setDownloadingPDF(true);
