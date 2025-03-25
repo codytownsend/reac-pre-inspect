@@ -1,4 +1,4 @@
-// src/pages/inspections/InspectionReportPage.jsx - Fixed calculate score issue
+// src/pages/inspections/InspectionReportPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInspection } from '../../context/InspectionContext';
@@ -10,8 +10,6 @@ import {
   X,
   ArrowLeft,
   Share2,
-  Mail,
-  Link as LinkIcon,
   Check,
   Building,
   Home,
@@ -20,6 +18,7 @@ import {
 } from 'lucide-react';
 import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { generatePDF } from '../../utils/pdfReportUtil'; // Import PDF generation utility
 
 const InspectionReportPage = () => {
   const { id } = useParams();
@@ -33,9 +32,9 @@ const InspectionReportPage = () => {
   const [expandedSections, setExpandedSections] = useState({});
   const [showImageModal, setShowImageModal] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
-  const [showShareOptions, setShowShareOptions] = useState(false);
   const [shareSuccess, setShareSuccess] = useState('');
   const [statusUpdated, setStatusUpdated] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
   
   useEffect(() => {
     const loadData = async () => {
@@ -214,11 +213,28 @@ const InspectionReportPage = () => {
     window.print();
   };
   
-  // Handle download action - now also updates status
+  // Handle download action - FIXED to actually generate PDF
   const handleDownload = async () => {
-    await updateStatusToCompleted();
-    // Implementation for PDF download would go here
-    alert('Download PDF functionality would go here');
+    try {
+      setDownloadingPDF(true);
+      await updateStatusToCompleted();
+      
+      // Generate the PDF using the utility function
+      const filename = `Inspection_${id}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Generate the PDF - this will trigger the download
+      const result = await generatePDF('report-content', filename);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to generate PDF');
+      }
+      
+      setDownloadingPDF(false);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setError('Error generating PDF: ' + (error.message || ''));
+      setDownloadingPDF(false);
+    }
   };
   
   // Handle share report - now also updates status
@@ -248,34 +264,9 @@ const InspectionReportPage = () => {
           setError('Failed to copy link: ' + err.message);
           setTimeout(() => setError(''), 5000);
         });
-        
-      // Hide the share options dropdown
-      setShowShareOptions(false);
     } catch (err) {
       console.error('Error sharing report:', err);
       setError('Error sharing report: ' + err.message);
-      setTimeout(() => setError(''), 5000);
-    }
-  };
-  
-  // Handle email action - now also updates status
-  const handleEmailReport = async () => {
-    const recipientEmail = prompt("Enter recipient's email address:");
-    if (recipientEmail && recipientEmail.includes('@')) {
-      // First mark as shared and update status
-      await updateDoc(doc(db, 'inspections', id), {
-        isShared: true,
-        sharedIds: arrayUnion(id),
-        sharedAt: serverTimestamp(),
-        status: 'Completed' // Set status to completed when emailing
-      });
-      
-      setStatusUpdated(true);
-      setShareSuccess(`Report will be emailed to ${recipientEmail}`);
-      setTimeout(() => setShareSuccess(''), 5000);
-      setShowShareOptions(false);
-    } else if (recipientEmail) {
-      setError('Please enter a valid email address');
       setTimeout(() => setError(''), 5000);
     }
   };
@@ -411,39 +402,20 @@ const InspectionReportPage = () => {
             <Printer size={16} className="mr-1" /> Print
           </button>
           
-          <div className="relative">
-            <button 
-              className="p-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg flex items-center text-sm font-medium"
-              onClick={() => setShowShareOptions(!showShareOptions)}
-            >
-              <Share2 size={16} className="mr-1" /> Share
-            </button>
-            
-            {showShareOptions && (
-              <div className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg w-48 overflow-hidden z-20">
-                <button
-                  className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center"
-                  onClick={handleShareReport}
-                >
-                  <LinkIcon size={16} className="mr-2" />
-                  Copy shareable link
-                </button>
-                <button
-                  className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center"
-                  onClick={handleEmailReport}
-                >
-                  <Mail size={16} className="mr-2" />
-                  Email as PDF
-                </button>
-              </div>
-            )}
-          </div>
+          <button 
+            className="p-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg flex items-center text-sm font-medium"
+            onClick={handleShareReport}
+          >
+            <Share2 size={16} className="mr-1" /> Share
+          </button>
           
           <button 
             className="p-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-lg flex items-center text-sm font-medium"
             onClick={handleDownload}
+            disabled={downloadingPDF}
           >
-            <Download size={16} className="mr-1" /> Download
+            <Download size={16} className="mr-1" /> 
+            {downloadingPDF ? 'Generating...' : 'Download'}
           </button>
         </div>
       </div>
@@ -457,7 +429,7 @@ const InspectionReportPage = () => {
       )}
       
       {/* Report Content */}
-      <div className="container mx-auto p-4 max-w-4xl">
+      <div id="report-content" className="container mx-auto p-4 max-w-4xl">
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           {/* Report Header */}
           <div className="text-center border-b pb-6 mb-6">
@@ -602,7 +574,7 @@ const InspectionReportPage = () => {
                                       </span>
                                     </div>
                                     
-                                    <p className="mb-3">{finding.deficiency}</p>
+                                    <p className="mb-3 finding-deficiency">{finding.deficiency}</p>
                                     
                                     {finding.notes && (
                                       <div className="mb-3">

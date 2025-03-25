@@ -3919,3 +3919,43 @@ h3 {
 .z-1500 {
   z-index: 1500;
 }
+
+
+
+@media print {
+
+  /* Make images larger in PDF output */
+  .finding-photo,
+  .photo-thumbnail,
+  .finding-item__photo,
+  .finding-details__photo {
+    width: 120px !important;
+    height: 120px !important;
+  }
+
+  /* Photo grids should accommodate larger images */
+  .photo-grid,
+  .finding-details__photo-grid,
+  .finding-item__photos {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  /* Ensure deficiency text stands out */
+  .finding-deficiency,
+  .finding-item__description,
+  .finding-card__description {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Add a label before deficiency text to make it clearer */
+  .finding-deficiency::before,
+  .finding-item__description::before,
+  .finding-card__description::before {
+    content: "Deficiency: ";
+    font-weight: bold;
+  }
+}

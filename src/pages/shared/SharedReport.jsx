@@ -496,7 +496,10 @@ const SharedReport = () => {
                                     </span>
                                   </div>
                                   
-                                  <p className="mb-3 text-base">{finding.deficiency}</p>
+                                  <div className="mb-3">
+                                    <strong className="text-sm">Deficiency:</strong>
+                                    <p className="finding-deficiency text-base">{finding.deficiency}</p>
+                                  </div>
                                   
                                   {finding.notes && (
                                     <div className="mb-3">

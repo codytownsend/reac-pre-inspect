@@ -22,13 +22,13 @@ export const generatePDF = (elementId = 'report-content', filename = 'inspection
     filename: filename,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { 
-      scale: 2,
+      scale: 3,  // Increased from 2 to 3 for better quality
       useCORS: true,
       logging: false
     },
     jsPDF: { 
-      unit: 'mm', 
-      format: 'a4', 
+      unit: 'in', 
+      format: 'letter', 
       orientation: 'portrait' 
     }
   };
