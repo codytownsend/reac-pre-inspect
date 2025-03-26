@@ -1,6 +1,6 @@
 import html2pdf from 'html2pdf.js';
 
-// Updated generatePDF function with larger finding images
+// generatePDF
 export const generatePDF = (elementId = 'report-content', filename = 'inspection-report.pdf', options = {}) => {
   return new Promise((resolve, reject) => {
     const element = document.getElementById(elementId);
@@ -107,11 +107,8 @@ export const generatePDF = (elementId = 'report-content', filename = 'inspection
     
     const mergedOptions = { ...defaultOptions, ...options };
     
-    // Try using window.html2pdf if available, otherwise use imported html2pdf
-    const pdfGenerator = window.html2pdf || html2pdf;
-    
-    // Generate PDF
-    pdfGenerator()
+    // Use only the imported html2pdf version
+    html2pdf()
       .from(clone)
       .set(mergedOptions)
       .save()
